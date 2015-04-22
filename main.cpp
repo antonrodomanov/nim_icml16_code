@@ -33,6 +33,7 @@ void read_svmlight_file(
 
         /* read features */
         while (sscanf(cline, " %d:%lf%n", &feature_idx, &feature_value, &offset) == 2) {
+            --feature_idx; // libsvm counts from 1
             cline += offset;
             design_matrix[sample_idx][feature_idx] = feature_value;
         }
