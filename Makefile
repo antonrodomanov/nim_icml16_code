@@ -71,12 +71,15 @@ gtest_main.a : gtest-all.o gtest_main.o
 # gtest_main.a, depending on whether it defines its own main()
 # function.
 
-LogRegOracle.o : $(USER_DIR)/LogRegOracle.cc $(USER_DIR)/LogRegOracle.h $(GTEST_HEADERS)
+LogRegOracle.o : $(USER_DIR)/LogRegOracle.cc $(USER_DIR)/LogRegOracle.h $(USER_DIR)/special.h $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/LogRegOracle.cc
 
 LogRegOracle_unittest.o : $(USER_DIR)/LogRegOracle_unittest.cc \
                      $(USER_DIR)/LogRegOracle.h $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/LogRegOracle_unittest.cc
 
-LogRegOracle_unittest : LogRegOracle.o LogRegOracle_unittest.o gtest_main.a
+LogRegOracle_unittest : LogRegOracle.o LogRegOracle_unittest.o special.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
+
+special.o : $(USER_DIR)/special.cc $(USER_DIR)/special.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/special.cc

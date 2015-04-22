@@ -16,6 +16,20 @@ TEST(SingleValTest, Basic) {
     EXPECT_NEAR(func.single_val(w, 1), 0.721337293512, 1e-5);
 }
 
+TEST(SingleValTest, Overflow) {
+    std::vector<std::vector<double>> Z {
+        {0.1, -0.01},
+        {-0.01, -0.1},
+        {0.3, 0.1}
+    };
+    std::vector<double> w {1e5, 1e5};
+    double lambda = 0.1;
+
+    LogRegOracle func(Z, lambda);
+
+    EXPECT_NEAR(func.single_val(w, 2), 1000040000.0, 1e-5);
+}
+
 TEST(SingleGradTest, Basic) {
     std::vector<std::vector<double>> Z {
         {0.1, -0.01},

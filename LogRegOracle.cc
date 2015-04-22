@@ -1,5 +1,6 @@
 #include "LogRegOracle.h"
 #include <cmath>
+#include "special.h"
 
 LogRegOracle::LogRegOracle(const std::vector<std::vector<double>>& Z, double lambda)
     : Z(Z), lambda(lambda)
@@ -20,7 +21,7 @@ double LogRegOracle::single_val(const std::vector<double>& w, int idx)
         w2 += w[j] * w[j];
     }
 
-    return log(1 + exp(wtz)) + (lambda / 2) * w2;
+    return logaddexp(0, wtz) + (lambda / 2) * w2;
 }
 
 std::vector<double> LogRegOracle::single_grad(const std::vector<double>& w, int idx)
