@@ -6,7 +6,7 @@ LogRegOracle::LogRegOracle(const std::vector<std::vector<double>>& Z, double lam
 {
 }
 
-double LogRegOracle::single_val(std::vector<double> w, int idx)
+double LogRegOracle::single_val(const std::vector<double>& w, int idx)
 {
     /* compute dot product w' * z[idx] */
     double wtz = 0.0;
@@ -23,7 +23,7 @@ double LogRegOracle::single_val(std::vector<double> w, int idx)
     return log(1 + exp(wtz)) + (lambda / 2) * w2;
 }
 
-std::vector<double> LogRegOracle::single_grad(std::vector<double> w, int idx)
+std::vector<double> LogRegOracle::single_grad(const std::vector<double>& w, int idx)
 {
     /* compute dot product w' * z[idx] */
     double wtz = 0.0;
