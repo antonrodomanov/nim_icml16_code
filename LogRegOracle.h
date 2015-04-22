@@ -8,6 +8,7 @@ class LogRegOracle
 public:
     LogRegOracle(const std::vector<std::vector<double>>& Z, double lambda);
 
+    double single_val(std::vector<double> w, int idx);
     std::vector<double> single_grad(std::vector<double> w, int idx);
 
 private:

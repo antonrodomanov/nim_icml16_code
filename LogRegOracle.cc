@@ -6,6 +6,23 @@ LogRegOracle::LogRegOracle(const std::vector<std::vector<double>>& Z, double lam
 {
 }
 
+double LogRegOracle::single_val(std::vector<double> w, int idx)
+{
+    /* compute dot product w' * z[idx] */
+    double wtz = 0.0;
+    for (int j = 0; j < int(w.size()); ++j) {
+        wtz += w[j] * Z[idx][j];
+    }
+
+    /* compute squared two-norm */
+    double w2 = 0.0;
+    for (int j = 0; j < int(w.size()); ++j) {
+        w2 += w[j] * w[j];
+    }
+
+    return log(1 + exp(wtz)) + (lambda / 2) * w2;
+}
+
 std::vector<double> LogRegOracle::single_grad(std::vector<double> w, int idx)
 {
     /* compute dot product w' * z[idx] */
