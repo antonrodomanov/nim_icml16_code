@@ -1,0 +1,5 @@
+*.o
+*.a
+datasets
+main
+LogRegOracle_unittest
