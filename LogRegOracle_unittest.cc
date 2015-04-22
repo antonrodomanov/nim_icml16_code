@@ -2,6 +2,20 @@
 #include "gtest/gtest.h"
 #include <vector>
 
+TEST(NSamplesTest, Basic) {
+    std::vector<std::vector<double>> Z {
+        {0.1, -0.01},
+        {-0.01, -0.1},
+        {0.3, 0.1}
+    };
+    std::vector<double> w {0.1, -0.4};
+    double lambda = 0.1;
+
+    LogRegOracle func(Z, lambda);
+
+    EXPECT_EQ(func.n_samples(), 3);
+}
+
 TEST(SingleValTest, Basic) {
     std::vector<std::vector<double>> Z {
         {0.1, -0.01},

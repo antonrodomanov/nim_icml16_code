@@ -8,11 +8,13 @@ class LogRegOracle
 public:
     LogRegOracle(const std::vector<std::vector<double>>& Z, double lambda);
 
-    double single_val(const std::vector<double>& w, int idx);
-    std::vector<double> single_grad(const std::vector<double>& w, int idx);
+    int n_samples() const;
 
-    double full_val(const std::vector<double>& w);
-    std::vector<double> full_grad(const std::vector<double>& w);
+    double single_val(const std::vector<double>& w, int idx) const;
+    std::vector<double> single_grad(const std::vector<double>& w, int idx) const;
+
+    double full_val(const std::vector<double>& w) const;
+    std::vector<double> full_grad(const std::vector<double>& w) const;
 
 private:
     const std::vector<std::vector<double>>& Z;

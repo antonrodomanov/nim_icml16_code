@@ -7,7 +7,9 @@ LogRegOracle::LogRegOracle(const std::vector<std::vector<double>>& Z, double lam
 {
 }
 
-double LogRegOracle::single_val(const std::vector<double>& w, int idx)
+int LogRegOracle::n_samples() const { return Z.size(); }
+
+double LogRegOracle::single_val(const std::vector<double>& w, int idx) const
 {
     /* compute dot product w' * z[idx] */
     double wtz = 0.0;
@@ -24,7 +26,7 @@ double LogRegOracle::single_val(const std::vector<double>& w, int idx)
     return logaddexp(0, wtz) + (lambda / 2) * w2;
 }
 
-std::vector<double> LogRegOracle::single_grad(const std::vector<double>& w, int idx)
+std::vector<double> LogRegOracle::single_grad(const std::vector<double>& w, int idx) const
 {
     /* compute dot product w' * z[idx] */
     double wtz = 0.0;
@@ -46,7 +48,7 @@ std::vector<double> LogRegOracle::single_grad(const std::vector<double>& w, int 
     return g;
 }
 
-double LogRegOracle::full_val(const std::vector<double>& w)
+double LogRegOracle::full_val(const std::vector<double>& w) const
 {
     double f = 0.0;
     for (int i = 0; i < int(Z.size()); ++i) {
@@ -56,7 +58,7 @@ double LogRegOracle::full_val(const std::vector<double>& w)
     return f;
 }
 
-std::vector<double> LogRegOracle::full_grad(const std::vector<double>& w)
+std::vector<double> LogRegOracle::full_grad(const std::vector<double>& w) const
 {
     std::vector<double> g = std::vector<double>(w.size(), 0.0);
     for (int i = 0; i < int(Z.size()); ++i) {
