@@ -54,3 +54,21 @@ double LogRegOracle::full_val(const std::vector<double>& w)
     f /= Z.size();
     return f;
 }
+
+std::vector<double> LogRegOracle::full_grad(const std::vector<double>& w)
+{
+    std::vector<double> g = std::vector<double>(w.size(), 0.0);
+    for (int i = 0; i < int(Z.size()); ++i) {
+        std::vector<double> gi = single_grad(w, i);
+        for (int j = 0; j < int(gi.size()); ++j) {
+            g[j] += gi[j];
+        }
+    }
+
+    /* normalise */
+    for (int j = 0; j < int(g.size()); ++j) {
+        g[j] /= Z.size();
+    }
+
+    return g;
+}

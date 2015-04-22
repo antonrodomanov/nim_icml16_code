@@ -45,3 +45,19 @@ TEST(FullValTest, Basic) {
 
     EXPECT_NEAR(func.full_val(w), 0.70888955146, 1e-5);
 }
+
+TEST(FullGradTest, Basic) {
+    std::vector<std::vector<double>> Z {
+        {0.1, -0.01},
+        {-0.01, -0.1},
+        {0.3, 0.1}
+    };
+    std::vector<double> w {0.1, -0.4};
+    double lambda = 0.1;
+
+    LogRegOracle func(Z, lambda);
+
+    std::vector<double> g = func.full_grad(w);
+    EXPECT_NEAR(g[0], 0.07483417, 1e-5);
+    EXPECT_NEAR(g[1], -0.04208662, 1e-5);
+}
