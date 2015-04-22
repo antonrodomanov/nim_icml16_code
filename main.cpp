@@ -45,36 +45,6 @@ void read_svmlight_file(const std::string& path, int N, int D, std::vector<std::
     file.close();
 }
 
-class LogisticRegressionOracle {
-  public:
-    LogisticRegressionOracle(const std::vector<std::vector<double>>& Z)
-        : Z(Z)
-    {}
-
-    std::vector<double> single_grad(std::vector<double> w, int idx)
-    {
-        /* compute dot product w' * z[idx] */
-        double wtz = 0;
-        for (int j = 0; j < int(w.size()); ++j) {
-            wtz += w[j] * Z[idx][j];
-        }
-
-        /* take sigmoid */
-        double sigm = 1 / (1 + exp(-wtz));
-
-        /* compute requested gradient */
-        std::vector<double> g = std::vector<double>(int(w.size()), 0.0);
-        for (int j = 0; j < int(w.size()); ++j) {
-            g[j] = sigm * Z[idx][j];
-        }
-
-        return g;
-    }
-
-  private:
-    const std::vector<std::vector<double>>& Z;
-};
-
 std::vector<std::vector<double>>
 transform_to_z(std::vector<std::vector<double>> X, std::vector<int> y)
 {
