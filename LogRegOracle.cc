@@ -44,3 +44,13 @@ std::vector<double> LogRegOracle::single_grad(const std::vector<double>& w, int 
 
     return g;
 }
+
+double LogRegOracle::full_val(const std::vector<double>& w)
+{
+    double f = 0.0;
+    for (int i = 0; i < int(Z.size()); ++i) {
+        f += single_val(w, i);
+    }
+    f /= Z.size();
+    return f;
+}

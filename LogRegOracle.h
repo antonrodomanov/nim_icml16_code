@@ -11,6 +11,8 @@ public:
     double single_val(const std::vector<double>& w, int idx);
     std::vector<double> single_grad(const std::vector<double>& w, int idx);
 
+    double full_val(const std::vector<double>& w);
+
 private:
     const std::vector<std::vector<double>>& Z;
     double lambda;
