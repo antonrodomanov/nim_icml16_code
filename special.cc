@@ -8,6 +8,11 @@ double logaddexp(double a, double b)
     return t + log(exp(a - t) + exp(b - t));
 }
 
+double sigm(double x)
+{
+    return 1.0 / (1 + exp(-x));
+}
+
 double infnorm(const std::vector<double>& a)
 {
     double t = 0;

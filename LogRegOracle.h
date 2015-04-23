@@ -16,7 +16,9 @@ public:
     double full_val(const std::vector<double>& w) const;
     std::vector<double> full_grad(const std::vector<double>& w) const;
 
-private:
+    double phi_prime(double mu) const;
+    double phi_double_prime(double mu) const;
+
     const std::vector<std::vector<double>>& Z;
     double lambda;
 };

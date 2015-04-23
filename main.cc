@@ -26,10 +26,11 @@ int main()
     LogRegOracle func(Z, lambda);
     std::vector<double> w0 = std::vector<double>(Z[0].size(), 0.0);
 
-    double alpha = 1e-1;
-    int maxiter = 50 * Z.size();
+    //double alpha = 1e-1;
+    int maxiter = 3 * Z.size();
     //Logger logger = SGD(func, w0, alpha, maxiter);
-    Logger logger = SAG(func, w0, alpha, maxiter);
+    //Logger logger = SAG(func, w0, alpha, maxiter);
+    Logger logger = SO2(func, w0, maxiter);
 
     printf("%9s %15s %15s\n", "epoch", "val", "norm_grad");
     for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {

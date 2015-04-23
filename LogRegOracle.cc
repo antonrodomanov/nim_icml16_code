@@ -35,12 +35,12 @@ std::vector<double> LogRegOracle::single_grad(const std::vector<double>& w, int 
     }
 
     /* take sigmoid */
-    double sigm = 1.0 / (1 + exp(-wtz));
+    double s = sigm(wtz);
 
     /* compute requested gradient */
     std::vector<double> g = std::vector<double>(int(w.size()), 0.0);
     for (int j = 0; j < int(w.size()); ++j) {
-        g[j] = sigm * Z[idx][j];
+        g[j] = s * Z[idx][j];
         /* add reguliriser */
         g[j] += lambda * w[j];
     }
@@ -74,4 +74,15 @@ std::vector<double> LogRegOracle::full_grad(const std::vector<double>& w) const
     }
 
     return g;
+}
+
+double LogRegOracle::phi_prime(double mu) const
+{
+    return sigm(mu);
+}
+
+double LogRegOracle::phi_double_prime(double mu) const
+{
+    double s = sigm(mu);
+    return s * (1 - s);
 }
