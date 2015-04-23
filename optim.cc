@@ -46,11 +46,10 @@ Logger SAG(const LogRegOracle& func, const std::vector<double>& w0, double alpha
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, func.n_samples() - 1);
 
-    /* initialise the table of gradients */
-    std::vector<std::vector<double>> gtab(func.n_samples(), std::vector<double>(w.size(), 0.0));
+    /* initialisation */
+    std::vector<double> phi_prime(func.n_samples(), 0.0);
 
-    /* initialise average gradient */
-    std::vector<double> ag = std::vector<double>(w.size(), 0.0);
+    std::vector<double> g(w.size(), 0.0);
 
     /* log the initial point */
     logger.log(w);
@@ -60,22 +59,27 @@ Logger SAG(const LogRegOracle& func, const std::vector<double>& w0, double alpha
         /* choose index */
         int idx = dis(gen);
 
-        /* compute gradient with chosen index */
-        std::vector<double> gi = func.single_grad(w, idx);
-
-        /* modify average gradient: ag += (1/N)*(gi - gtab[idx]) */
+        /* compute mu = z[i]' * w */
+        double mu = 0.0;
         for (int j = 0; j < int(w.size()); ++j) {
-            ag[j] += (1.0 / func.n_samples()) * (gi[j] - gtab[idx][j]);
+            mu += func.Z[idx][j] * w[j];
         }
 
-        /* modify table: gtab[idx] = gi */
+        /* compute phi' at mu */
+        double phi_prime_new = func.phi_prime(mu);
+
+        /* update g */
+        double delta_phi_prime = phi_prime_new - phi_prime[idx];
         for (int j = 0; j < int(w.size()); ++j) {
-            gtab[idx][j] = gi[j];
+            g[j] += (1.0 / func.n_samples()) * delta_phi_prime * func.Z[idx][j];
         }
 
-        /* make a step w -= alpha*ag */
+        /* update model */
+        phi_prime[idx] = phi_prime_new;
+
+        /* make a step w -= alpha * (g + lambda * w) */
         for (int j = 0; j < int(w.size()); ++j) {
-            w[j] -= alpha * ag[j];
+            w[j] -= alpha * (g[j] + func.lambda * w[j]);
         }
 
         /* log current point */
