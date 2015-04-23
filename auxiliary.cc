@@ -41,18 +41,3 @@ void read_svmlight_file(const std::string& path, int N, int D, std::vector<std::
 
     file.close();
 }
-
-std::vector<std::vector<double>> transform_to_z(std::vector<std::vector<double>> X, std::vector<int> y)
-{
-    std::vector<std::vector<double>> Z = X;
-
-    /* multiply each sample X[i] by -y[i] */
-    for (int i = 0; i < int(X.size()); ++i) {
-        assert(y[i] == -1 || y[i] == 1);
-        for (int j = 0; j < int(X[i].size()); ++j) {
-            Z[i][j] *= -y[i];
-        }
-    }
-
-    return Z;
-}
