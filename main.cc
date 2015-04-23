@@ -60,12 +60,13 @@ struct Arg: public option::Arg
   }
 };
 
-enum optionIndex { UNKNOWN, HELP, METHOD, MAX_EPOCHS };
+enum optionIndex { UNKNOWN, HELP, DATASET, METHOD, MAX_EPOCHS };
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0, "" , "", option::Arg::None, "USAGE: ./main [options]\n\n"
                                              "Options:" },
     {HELP, 0, "", "help", option::Arg::None, "  --help  \tPrint usage and exit." },
+    {DATASET, 0, "", "dataset", Arg::Required, "  --dataset \tDataset (a9a, mushrooms)." },
     {METHOD, 0, "", "method", Arg::Required, "  --method \tOptimisation method (SAG, SGD, SO2)." },
     {MAX_EPOCHS, 0, "", "max_epochs", Arg::Required, "  --max_epochs \tMaximum number of epochs." },
     {0,0,0,0,0,0}
@@ -86,7 +87,17 @@ int main(int argc, char* argv[])
         return 0;
     }
 
+    if (!options[METHOD]) {
+        fprintf(stderr, "Require method\n");
+        return 1;
+    }
     std::string method = options[METHOD].arg;
+
+    if (!options[DATASET]) {
+        fprintf(stderr, "Require dataset\n");
+        return 1;
+    }
+    std::string dataset = options[DATASET].arg;
 
     if (!options[MAX_EPOCHS]) {
         fprintf(stderr, "Require max_epochs\n");
@@ -104,7 +115,16 @@ int main(int argc, char* argv[])
     std::vector<int> y;
     double lambda;
 
-    load_a9a(Z, y);
+    if (dataset == "a9a") {
+        fprintf(stderr, "Load a9a\n");
+        load_a9a(Z, y);
+    } else if (dataset == "mushrooms") {
+        fprintf(stderr, "Load mushrooms\n");
+        load_mushrooms(Z, y);
+    } else {
+        fprintf(stderr, "Unknown dataset %s\n", dataset.c_str());
+        return 1;
+    }
 
     /* multiply each sample Z[i] by -y[i] */
     for (int i = 0; i < int(Z.size()); ++i) {
@@ -122,6 +142,8 @@ int main(int argc, char* argv[])
     int maxiter = max_epochs * Z.size();
 
     if (method == "SAG") {
+        fprintf(stderr, "Use method SAG\n");
+
         /* choose step length */
         double L = 0.0;
         for (int i = 0; i < int(Z.size()); ++i) {
@@ -143,6 +165,8 @@ int main(int argc, char* argv[])
             printf("%9.2f %9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
         }
     } else if (method == "SGD") {
+        fprintf(stderr, "Use method SGD\n");
+
         double alpha = 1e-4;
 
         Logger logger = SGD(func, w0, alpha, maxiter);
@@ -152,6 +176,8 @@ int main(int argc, char* argv[])
             printf("%9.2f %9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
         }
     } else if (method == "SO2") {
+        fprintf(stderr, "Use method SO2\n");
+
         Logger logger = SO2(func, w0, maxiter);
 
         printf("%9s %9s %15s %15s\n", "epoch", "elapsed", "val", "norm_grad");
