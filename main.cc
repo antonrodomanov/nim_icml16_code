@@ -18,7 +18,7 @@ int main()
     std::vector<int> y;
     double lambda;
 
-    load_mushrooms(X, y);
+    load_a9a(X, y);
     Z = transform_to_z(X, y);
 
     lambda = 1.0 / X.size();
@@ -27,7 +27,7 @@ int main()
     std::vector<double> w0 = std::vector<double>(Z[0].size(), 0.0);
 
     double alpha = 1e-1;
-    int maxiter = 100 * Z.size();
+    int maxiter = 50 * Z.size();
     //Logger logger = SGD(func, w0, alpha, maxiter);
     Logger logger = SAG(func, w0, alpha, maxiter);
 

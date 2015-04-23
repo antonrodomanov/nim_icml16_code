@@ -11,3 +11,9 @@ void load_mushrooms(std::vector<std::vector<double>>& X, std::vector<int>& y)
         y[i] = (y[i] == 1) ? -1 : 1;
     }
 }
+
+void load_a9a(std::vector<std::vector<double>>& X, std::vector<int>& y)
+{
+    /* read data */
+    read_svmlight_file("datasets/a9a", 32561, 123, X, y);
+}
