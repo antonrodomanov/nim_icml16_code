@@ -121,6 +121,9 @@ int main(int argc, char* argv[])
     } else if (dataset == "mushrooms") {
         fprintf(stderr, "Load mushrooms\n");
         load_mushrooms(Z, y);
+    } else if (dataset == "w8a") {
+        fprintf(stderr, "Load w8a\n");
+        load_w8a(Z, y);
     } else {
         fprintf(stderr, "Unknown dataset %s\n", dataset.c_str());
         return 1;
