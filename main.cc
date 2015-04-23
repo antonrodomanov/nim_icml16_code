@@ -127,6 +127,9 @@ int main(int argc, char* argv[])
     } else if (dataset == "covtype") {
         fprintf(stderr, "Load covtype\n");
         load_covtype(Z, y);
+    } else if (dataset == "quantum") {
+        fprintf(stderr, "Load quantum\n");
+        load_quantum(Z, y);
     } else {
         fprintf(stderr, "Unknown dataset %s\n", dataset.c_str());
         return 1;
