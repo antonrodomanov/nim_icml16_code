@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 
 #include "auxiliary.h"
 #include "datasets.h"
@@ -121,6 +122,20 @@ int main(int argc, char* argv[])
     int maxiter = max_epochs * Z.size();
 
     if (method == "SAG") {
+        /* choose step length */
+        double L = 0.0;
+        for (int i = 0; i < int(Z.size()); ++i) {
+            double x2 = 0.0;
+            for (int j = 0; j < int(Z[i].size()); ++j) {
+                x2 += Z[i][j] * Z[i][j];
+            }
+            L = std::max(L, x2);
+        }
+        L *= 0.25;
+        L += lambda; // plus reguliriser
+
+        double alpha = 1.0 / L;
+        fprintf(stderr, "SAG: L=%g, alpha=%g\n", L, alpha);
         Logger logger = SAG(func, w0, alpha, maxiter);
 
         printf("%9s %9s %15s %15s\n", "epoch", "elapsed", "val", "norm_grad");
