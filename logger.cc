@@ -30,7 +30,11 @@ void Logger::log(const std::vector<double>& w)
             elaps = 0;
         }
 
-        fprintf(stderr, "%9.2f %9.2f %15.6e %15.6e\n", epoch, elaps, f, norm_g);
+        /* print header */
+        if (n_calls == 0) {
+            fprintf(stderr, "%9s %9s %9s %15s %15s\n", "epoch", "opt_elaps", "tot_elaps", "f", "norm_g");
+        }
+        fprintf(stderr, "%9.2f %9.2f %9.2f %15.6e %15.6e\n", epoch, elaps, elaps + mainten_time, f, norm_g);
 
         trace_epoch.push_back(epoch);
         trace_elaps.push_back(elaps);
