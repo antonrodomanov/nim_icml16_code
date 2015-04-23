@@ -3,7 +3,8 @@
 
 #include <vector>
 #include <string>
+#include <Eigen/Dense>
 
-void read_svmlight_file(const std::string& path, int N, int D, std::vector<std::vector<double>>& X, std::vector<int>& y);
+void read_svmlight_file(const std::string& path, int N, int D, Eigen::MatrixXd& X, Eigen::VectorXi& y);
 
 #endif

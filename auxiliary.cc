@@ -3,12 +3,12 @@
 #include <cassert>
 #include <fstream>
 
-void read_svmlight_file(const std::string& path, int N, int D, std::vector<std::vector<double>>& X, std::vector<int>& y)
+void read_svmlight_file(const std::string& path, int N, int D, Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
     std::ifstream file(path);
 
-    X = std::vector<std::vector<double>>(N, std::vector<double>(D, 0.0));
-    y = std::vector<int>(N, 0);
+    X.resize(N, D);
+    y.resize(N);
 
     std::string line;
     int sample_idx = 0;
@@ -24,7 +24,7 @@ void read_svmlight_file(const std::string& path, int N, int D, std::vector<std::
         /* read label */
         sscanf(cline, "%d%n", &label, &offset);
         cline += offset;
-        y[sample_idx] = label;
+        y(sample_idx) = label;
 
         /* read features */
         while (sscanf(cline, " %d:%lf%n", &feature_idx, &feature_value, &offset) == 2) {
@@ -32,7 +32,7 @@ void read_svmlight_file(const std::string& path, int N, int D, std::vector<std::
             assert(feature_idx >= 0 && feature_idx < D);
 
             cline += offset;
-            X[sample_idx][feature_idx] = feature_value;
+            X(sample_idx, feature_idx) = feature_value;
         }
 
         /* go to next sample */

@@ -1,13 +1,13 @@
 #ifndef DATASETS_H
 #define DATASETS_H
 
-#include <vector>
+#include <Eigen/Dense>
 
-void load_mushrooms(std::vector<std::vector<double>>& X, std::vector<int>& y);
-void load_a9a(std::vector<std::vector<double>>& X, std::vector<int>& y);
-void load_w8a(std::vector<std::vector<double>>& X, std::vector<int>& y);
-void load_covtype(std::vector<std::vector<double>>& X, std::vector<int>& y);
-void load_quantum(std::vector<std::vector<double>>& X, std::vector<int>& y);
-void load_alpha(std::vector<std::vector<double>>& X, std::vector<int>& y);
+void load_mushrooms(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_a9a(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_w8a(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_covtype(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_alpha(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 
 #endif

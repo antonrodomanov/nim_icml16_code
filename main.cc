@@ -7,6 +7,8 @@
 #include <string>
 #include <algorithm>
 
+#include <Eigen/Dense>
+
 #include "auxiliary.h"
 #include "datasets.h"
 #include "LogRegOracle.h"
@@ -111,8 +113,8 @@ int main(int argc, char* argv[])
     /* ========================================================================== */
     /* ========================================================================== */
 
-    std::vector<std::vector<double>> Z;
-    std::vector<int> y;
+    Eigen::MatrixXd Z;
+    Eigen::VectorXi y;
     double lambda;
 
     if (dataset == "a9a") {
@@ -138,30 +140,37 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    /* multiply each sample Z[i] by -y[i] */
-    for (int i = 0; i < int(Z.size()); ++i) {
-        assert(y[i] == -1 || y[i] == 1);
-        for (int j = 0; j < int(Z[i].size()); ++j) {
-            Z[i][j] *= -y[i];
+    std::vector<std::vector<double>> Z2(Z.rows(), std::vector<double>(Z.cols()));
+    for (int i = 0; i < Z.rows(); ++i) {
+        for (int j = 0; j < Z.cols(); ++j) {
+            Z2[i][j] = Z(i, j);
         }
     }
 
-    lambda = 1.0 / Z.size();
+    /* multiply each sample Z[i] by -y[i] */
+    for (int i = 0; i < int(Z2.size()); ++i) {
+        assert(y(i) == -1 || y(i) == 1);
+        for (int j = 0; j < int(Z2[i].size()); ++j) {
+            Z2[i][j] *= -y(i);
+        }
+    }
 
-    LogRegOracle func(Z, lambda);
-    std::vector<double> w0 = std::vector<double>(Z[0].size(), 0.0);
+    lambda = 1.0 / Z2.size();
 
-    int maxiter = max_epochs * Z.size();
+    LogRegOracle func(Z2, lambda);
+    std::vector<double> w0 = std::vector<double>(Z2[0].size(), 0.0);
+
+    int maxiter = max_epochs * Z2.size();
 
     if (method == "SAG") {
         fprintf(stderr, "Use method SAG\n");
 
         /* choose step length */
         double L = 0.0;
-        for (int i = 0; i < int(Z.size()); ++i) {
+        for (int i = 0; i < int(Z2.size()); ++i) {
             double x2 = 0.0;
-            for (int j = 0; j < int(Z[i].size()); ++j) {
-                x2 += Z[i][j] * Z[i][j];
+            for (int j = 0; j < int(Z2[i].size()); ++j) {
+                x2 += Z2[i][j] * Z2[i][j];
             }
             L = std::max(L, x2);
         }
