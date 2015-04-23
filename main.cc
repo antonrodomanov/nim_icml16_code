@@ -7,26 +7,31 @@
 #include <string>
 
 #include "auxiliary.h"
+#include "datasets.h"
+#include "LogRegOracle.h"
+#include "optim.h"
+#include "logger.h"
 
-int main(int argc, char** argv)
+int main()
 {
     std::vector<std::vector<double>> X, Z;
     std::vector<int> y;
+    double lambda;
 
-    read_svmlight_file("datasets/mushrooms", 8124, 112, X, y);
-
-    /* transform y from {1, 2} to {-1, 1} */
-    for (int i = 0; i < int(y.size()); ++i) {
-        y[i] = (y[i] == 1) ? -1 : 1;
-    }
-
+    load_mushrooms(X, y);
     Z = transform_to_z(X, y);
 
-    for (int i = 0; i < 10; ++i) {
-        for (int j = 0; j < int(Z[i].size()); ++j) {
-            printf("%g ", Z[i][j]);
-        }
-        printf("\n");
+    lambda = 1.0 / X.size();
+
+    LogRegOracle func(Z, lambda);
+    std::vector<double> w0 = std::vector<double>(Z[0].size(), 0.0);
+
+    double alpha = 1e-1;
+    int maxiter = 10 * Z.size();
+    Logger logger = SGD(func, w0, alpha, maxiter);
+
+    for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
+        printf("%9.2f %15.6e\n", logger.trace_epoch[i], logger.trace_val[i]);
     }
 
     return 0;

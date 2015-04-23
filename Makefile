@@ -81,7 +81,7 @@ LogRegOracle_unittest.o : $(USER_DIR)/LogRegOracle_unittest.cc \
 LogRegOracle_unittest : LogRegOracle.o LogRegOracle_unittest.o special.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
-main : main.o LogRegOracle.o optim.o auxiliary.o special.o
+main : main.o LogRegOracle.o optim.o auxiliary.o special.o datasets.o logger.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 main.o : $(USER_DIR)/main.cc $(USER_DIR)/auxiliary.h
@@ -90,8 +90,14 @@ main.o : $(USER_DIR)/main.cc $(USER_DIR)/auxiliary.h
 special.o : $(USER_DIR)/special.cc $(USER_DIR)/special.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/special.cc
 
-optim.o : $(USER_DIR)/optim.cc $(USER_DIR)/optim.h $(USER_DIR)/LogRegOracle.h
+optim.o : $(USER_DIR)/optim.cc $(USER_DIR)/optim.h $(USER_DIR)/LogRegOracle.h $(USER_DIR)/logger.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/optim.cc
 
 auxiliary.o : $(USER_DIR)/auxiliary.cc $(USER_DIR)/auxiliary.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/auxiliary.cc
+
+datasets.o : $(USER_DIR)/datasets.cc $(USER_DIR)/datasets.h $(USER_DIR)/auxiliary.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/datasets.cc
+
+logger.o : $(USER_DIR)/logger.cc $(USER_DIR)/logger.h $(USER_DIR)/LogRegOracle.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/logger.cc
