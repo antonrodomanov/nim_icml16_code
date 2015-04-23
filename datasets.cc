@@ -1,5 +1,6 @@
 #include "datasets.h"
 #include "auxiliary.h"
+#include <cmath>
 
 void load_mushrooms(std::vector<std::vector<double>>& X, std::vector<int>& y)
 {
@@ -65,4 +66,34 @@ void load_quantum(std::vector<std::vector<double>>& X, std::vector<int>& y)
     for (int i = 0; i < int(y.size()); ++i) {
         y[i] = (y[i] == 1) ? -1 : 1;
     }
+}
+
+void load_alpha(std::vector<std::vector<double>>& X, std::vector<int>& y)
+{
+    /* read data */
+    int N = 500000;
+    int D = 500;
+
+    X = std::vector<std::vector<double>>(N, std::vector<double>(D, 0.0));
+    y = std::vector<int>(N, 0);
+
+    int dummy;
+    FILE* file;
+    file = fopen("datasets/alpha_train.dat", "r");
+    for (int i = 0; i < N; ++i) {
+        if (i % 10000 == 0) {
+            fprintf(stderr, "Processed %d/%d samples (%.2f%%)\n", i, N, round(double(i) / N * 100));
+        }
+        for (int j = 0; j < D; ++j) {
+            dummy = fscanf(file, "%lf", &X[i][j]);
+        }
+    }
+    fclose(file);
+    dummy += 0;
+
+    file = fopen("datasets/alpha_train.lab", "r");
+    for (int i = 0; i < N; ++i) {
+        dummy = fscanf(file, "%d", &y[i]);
+    }
+    fclose(file);
 }

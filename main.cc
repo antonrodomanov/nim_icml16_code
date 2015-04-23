@@ -130,6 +130,9 @@ int main(int argc, char* argv[])
     } else if (dataset == "quantum") {
         fprintf(stderr, "Load quantum\n");
         load_quantum(Z, y);
+    } else if (dataset == "alpha") {
+        fprintf(stderr, "Load alpha, might take a lot of time\n");
+        load_alpha(Z, y);
     } else {
         fprintf(stderr, "Unknown dataset %s\n", dataset.c_str());
         return 1;

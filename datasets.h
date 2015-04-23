@@ -8,5 +8,6 @@ void load_a9a(std::vector<std::vector<double>>& X, std::vector<int>& y);
 void load_w8a(std::vector<std::vector<double>>& X, std::vector<int>& y);
 void load_covtype(std::vector<std::vector<double>>& X, std::vector<int>& y);
 void load_quantum(std::vector<std::vector<double>>& X, std::vector<int>& y);
+void load_alpha(std::vector<std::vector<double>>& X, std::vector<int>& y);
 
 #endif
