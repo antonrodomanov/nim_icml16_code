@@ -6,4 +6,6 @@
 
 Logger SGD(const LogRegOracle& func, const std::vector<double>& w0, double alpha, int maxiter);
 
+Logger SAG(const LogRegOracle& func, const std::vector<double>& w0, double alpha, int maxiter);
+
 #endif

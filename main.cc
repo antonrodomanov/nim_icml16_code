@@ -27,9 +27,11 @@ int main()
     std::vector<double> w0 = std::vector<double>(Z[0].size(), 0.0);
 
     double alpha = 1e-1;
-    int maxiter = 10 * Z.size();
-    Logger logger = SGD(func, w0, alpha, maxiter);
+    int maxiter = 100 * Z.size();
+    //Logger logger = SGD(func, w0, alpha, maxiter);
+    Logger logger = SAG(func, w0, alpha, maxiter);
 
+    printf("%9s %15s %15s\n", "epoch", "val", "norm_grad");
     for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
         printf("%9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_val[i], logger.trace_norm_grad[i]);
     }
