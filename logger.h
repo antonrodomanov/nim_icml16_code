@@ -12,6 +12,7 @@ public:
 
     std::vector<double> trace_epoch;
     std::vector<double> trace_val;
+    std::vector<double> trace_norm_grad;
 
 private:
     const LogRegOracle& func;

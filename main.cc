@@ -31,7 +31,7 @@ int main()
     Logger logger = SGD(func, w0, alpha, maxiter);
 
     for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
-        printf("%9.2f %15.6e\n", logger.trace_epoch[i], logger.trace_val[i]);
+        printf("%9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_val[i], logger.trace_norm_grad[i]);
     }
 
     return 0;
