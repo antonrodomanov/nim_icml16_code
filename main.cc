@@ -13,8 +13,8 @@
 int main(int argc, char* argv[])
 {
     /* ============================= Parse commmand-line arguments ==================================== */
-    std::string method;
-    std::string dataset;
+    std::string method = "";
+    std::string dataset = "";
     double max_epochs = 1.0;
     double n_logs_per_epoch = 10.0;
 
@@ -23,10 +23,10 @@ int main(int argc, char* argv[])
         TCLAP::CmdLine cmd("Run a numerical optimiser for training logistic regression.", ' ', "0.1");
 
         /* specify all options */
-        TCLAP::ValueArg<std::string> arg_method("", "method", "Optimisation method (SGD, SAG, SO2)", true, "", "string");
-        TCLAP::ValueArg<std::string> arg_dataset("", "dataset", "Dataset (a9a, mushrooms, w8a, covtype, quantum, alpha)", true, "", "string");
-        TCLAP::ValueArg<double> arg_max_epochs("", "max_epochs", "Maximum number of epochs", true, -1.0, "double");
-        TCLAP::ValueArg<double> arg_n_logs_per_epoch("", "n_logs_per_epoch", "Number of requested logs per epoch", false, 10.0, "double");
+        TCLAP::ValueArg<std::string> arg_method("", "method", "Optimisation method (SGD, SAG, SO2)", true, method, "string");
+        TCLAP::ValueArg<std::string> arg_dataset("", "dataset", "Dataset (a9a, mushrooms, w8a, covtype, quantum, alpha)", true, dataset, "string");
+        TCLAP::ValueArg<double> arg_max_epochs("", "max_epochs", "Maximum number of epochs (default: 1.0)", false, max_epochs, "double");
+        TCLAP::ValueArg<double> arg_n_logs_per_epoch("", "n_logs_per_epoch", "Number of requested logs per epoch (default: 10.0)", false, n_logs_per_epoch, "double");
 
         /* add options to parser */
         cmd.add(arg_method);
