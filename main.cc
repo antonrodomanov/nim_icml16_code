@@ -140,18 +140,13 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    /* multiply each sample Z[i] by -y[i] */
+    Z.array().colwise() *= -y.cast<double>().array();
+
     std::vector<std::vector<double>> Z2(Z.rows(), std::vector<double>(Z.cols()));
     for (int i = 0; i < Z.rows(); ++i) {
         for (int j = 0; j < Z.cols(); ++j) {
             Z2[i][j] = Z(i, j);
-        }
-    }
-
-    /* multiply each sample Z[i] by -y[i] */
-    for (int i = 0; i < int(Z2.size()); ++i) {
-        assert(y(i) == -1 || y(i) == 1);
-        for (int j = 0; j < int(Z2[i].size()); ++j) {
-            Z2[i][j] *= -y(i);
         }
     }
 
