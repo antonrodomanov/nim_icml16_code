@@ -15,99 +15,33 @@
 #include "optim.h"
 #include "logger.h"
 
-#include "optionparser.h"
-
-struct Arg: public option::Arg
-{
-  static void printError(const char* msg1, const option::Option& opt, const char* msg2)
-  {
-    fprintf(stderr, "%s", msg1);
-    fwrite(opt.name, opt.namelen, 1, stderr);
-    fprintf(stderr, "%s", msg2);
-  }
-
-  static option::ArgStatus Unknown(const option::Option& option, bool msg)
-  {
-    if (msg) printError("Unknown option '", option, "'\n");
-    return option::ARG_ILLEGAL;
-  }
-
-  static option::ArgStatus Required(const option::Option& option, bool msg)
-  {
-    if (option.arg != 0)
-      return option::ARG_OK;
-
-    if (msg) printError("Option '", option, "' requires an argument\n");
-    return option::ARG_ILLEGAL;
-  }
-
-  static option::ArgStatus NonEmpty(const option::Option& option, bool msg)
-  {
-    if (option.arg != 0 && option.arg[0] != 0)
-      return option::ARG_OK;
-
-    if (msg) printError("Option '", option, "' requires a non-empty argument\n");
-    return option::ARG_ILLEGAL;
-  }
-
-  static option::ArgStatus Numeric(const option::Option& option, bool msg)
-  {
-    char* endptr = 0;
-    if (option.arg != 0 && strtol(option.arg, &endptr, 10)){};
-    if (endptr != option.arg && *endptr == 0)
-      return option::ARG_OK;
-
-    if (msg) printError("Option '", option, "' requires a numeric argument\n");
-    return option::ARG_ILLEGAL;
-  }
-};
-
-enum optionIndex { UNKNOWN, HELP, DATASET, METHOD, MAX_EPOCHS };
-const option::Descriptor usage[] =
-{
-    {UNKNOWN, 0, "" , "", option::Arg::None, "USAGE: ./main [options]\n\n"
-                                             "Options:" },
-    {HELP, 0, "", "help", option::Arg::None, "  --help  \tPrint usage and exit." },
-    {DATASET, 0, "", "dataset", Arg::Required, "  --dataset \tDataset (a9a, mushrooms)." },
-    {METHOD, 0, "", "method", Arg::Required, "  --method \tOptimisation method (SAG, SGD, SO2)." },
-    {MAX_EPOCHS, 0, "", "max_epochs", Arg::Required, "  --max_epochs \tMaximum number of epochs." },
-    {0,0,0,0,0,0}
-};
+#include <tclap/CmdLine.h>
 
 int main(int argc, char* argv[])
 {
-    argc-=(argc>0); argv+=(argc>0); // skip program name argv[0] if present
-    option::Stats stats(usage, argc, argv);
-    option::Option options[stats.options_max], buffer[stats.buffer_max];
-    option::Parser parse(usage, argc, argv, options, buffer);
+    std::string method;
+    std::string dataset;
+    double max_epochs = 1.0;
 
-    if (parse.error())
-        return 1;
+    try {
+        TCLAP::CmdLine cmd("Run numerical optimiser for training logistic regression.", ' ', "0.1");
 
-    if (options[HELP] || argc == 0) {
-        option::printUsage(std::cout, usage);
-        return 0;
+        TCLAP::ValueArg<std::string> arg_method("", "method", "Optimisation method (SGD, SAG, SO2)", true, "", "string");
+        TCLAP::ValueArg<std::string> arg_dataset("", "dataset", "Dataset (a9a, mushrooms, w8a, covtype, quantum, alpha)", true, "", "string");
+        TCLAP::ValueArg<double> arg_max_epochs("", "max_epochs", "Maximum number of epochs", true, -1.0, "double");
+
+        cmd.add(arg_method);
+        cmd.add(arg_dataset);
+        cmd.add(arg_max_epochs);
+
+        cmd.parse(argc, argv);
+
+        method = arg_method.getValue();
+        dataset = arg_dataset.getValue();
+        max_epochs = arg_max_epochs.getValue();
+    } catch (TCLAP::ArgException &e) {
+        std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
-
-    if (!options[METHOD]) {
-        fprintf(stderr, "Require method\n");
-        return 1;
-    }
-    std::string method = options[METHOD].arg;
-
-    if (!options[DATASET]) {
-        fprintf(stderr, "Require dataset\n");
-        return 1;
-    }
-    std::string dataset = options[DATASET].arg;
-
-    if (!options[MAX_EPOCHS]) {
-        fprintf(stderr, "Require max_epochs\n");
-        return 1;
-    }
-
-    double max_epochs;
-    sscanf(options[MAX_EPOCHS].arg, "%lf", &max_epochs);
 
     /* ========================================================================== */
     /* ========================================================================== */
