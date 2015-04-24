@@ -87,17 +87,8 @@ int main(int argc, char* argv[])
     if (method == "SAG") {
         fprintf(stderr, "Use method SAG\n");
 
-        /* choose step length */
-        double L = 0.0;
-        for (int i = 0; i < Z.rows(); ++i) {
-            double x2 = 0.0;
-            for (int j = 0; j < Z.cols(); ++j) {
-                x2 += Z(i, j) * Z(i, j);
-            }
-            L = std::max(L, x2);
-        }
-        L *= 0.25;
-        L += lambda; // plus reguliriser
+        /* estimate the Lipschitz constant */
+        double L = 0.25 * Z.rowwise().squaredNorm().maxCoeff() + lambda;
 
         double alpha = 1.0 / L;
         fprintf(stderr, "SAG: L=%g, alpha=%g\n", L, alpha);
