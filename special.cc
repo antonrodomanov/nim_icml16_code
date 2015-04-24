@@ -1,6 +1,7 @@
-#include "special.h"
-#include <cmath>
 #include <algorithm>
+#include <cmath>
+
+#include "special.h"
 
 double logaddexp(double a, double b)
 {
@@ -10,10 +11,10 @@ double logaddexp(double a, double b)
 
 double logaddexp0(double x)
 {
-    return logaddexp(0, x);
+    return logaddexp(0.0, x);
 }
 
 double sigm(double x)
 {
-    return 1.0 / (1 + exp(-x));
+    return 1.0 / (1.0 + exp(-x));
 }
