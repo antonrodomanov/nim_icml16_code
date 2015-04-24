@@ -81,7 +81,7 @@ LogRegOracle_test.o : $(USER_DIR)/LogRegOracle_test.cc \
 LogRegOracle_test : LogRegOracle.o LogRegOracle_test.o special.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
-main : main.o LogRegOracle.o optim.o auxiliary.o special.o datasets.o logger.o
+main : main.o LogRegOracle.o optim.o auxiliary.o special.o datasets.o Logger.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 main.o : $(USER_DIR)/main.cc $(USER_DIR)/auxiliary.h
@@ -99,5 +99,5 @@ auxiliary.o : $(USER_DIR)/auxiliary.cc $(USER_DIR)/auxiliary.h
 datasets.o : $(USER_DIR)/datasets.cc $(USER_DIR)/datasets.h $(USER_DIR)/auxiliary.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/datasets.cc
 
-logger.o : $(USER_DIR)/Logger.cc $(USER_DIR)/Logger.h $(USER_DIR)/LogRegOracle.h
+Logger.o : $(USER_DIR)/Logger.cc $(USER_DIR)/Logger.h $(USER_DIR)/LogRegOracle.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/Logger.cc
