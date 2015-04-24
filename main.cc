@@ -143,29 +143,22 @@ int main(int argc, char* argv[])
     /* multiply each sample Z[i] by -y[i] */
     Z.array().colwise() *= -y.cast<double>().array();
 
-    std::vector<std::vector<double>> Z2(Z.rows(), std::vector<double>(Z.cols()));
-    for (int i = 0; i < Z.rows(); ++i) {
-        for (int j = 0; j < Z.cols(); ++j) {
-            Z2[i][j] = Z(i, j);
-        }
-    }
+    lambda = 1.0 / Z.rows();
 
-    lambda = 1.0 / Z2.size();
+    LogRegOracle func(Z, lambda);
+    Eigen::VectorXd w0 = Eigen::VectorXd::Zero(Z.cols());
 
-    LogRegOracle func(Z2, lambda);
-    std::vector<double> w0 = std::vector<double>(Z2[0].size(), 0.0);
-
-    int maxiter = max_epochs * Z2.size();
+    int maxiter = max_epochs * Z.rows();
 
     if (method == "SAG") {
         fprintf(stderr, "Use method SAG\n");
 
         /* choose step length */
         double L = 0.0;
-        for (int i = 0; i < int(Z2.size()); ++i) {
+        for (int i = 0; i < Z.rows(); ++i) {
             double x2 = 0.0;
-            for (int j = 0; j < int(Z2[i].size()); ++j) {
-                x2 += Z2[i][j] * Z2[i][j];
+            for (int j = 0; j < Z.cols(); ++j) {
+                x2 += Z(i, j) * Z(i, j);
             }
             L = std::max(L, x2);
         }

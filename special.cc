@@ -12,14 +12,3 @@ double sigm(double x)
 {
     return 1.0 / (1 + exp(-x));
 }
-
-double infnorm(const std::vector<double>& a)
-{
-    double t = 0;
-    for (int i = 0; i < int(a.size()); ++i) {
-        if (fabs(a[i]) > t) {
-            t = fabs(a[i]);
-        }
-    }
-    return t;
-}

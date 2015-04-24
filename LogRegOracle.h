@@ -1,25 +1,25 @@
 #ifndef LOG_REG_ORACLE_H_
 #define LOG_REG_ORACLE_H_
 
-#include <vector>
+#include <Eigen/Dense>
 
 class LogRegOracle
 {
 public:
-    LogRegOracle(const std::vector<std::vector<double>>& Z, double lambda);
+    LogRegOracle(const Eigen::MatrixXd& Z, double lambda);
 
     int n_samples() const;
 
-    double single_val(const std::vector<double>& w, int idx) const;
-    std::vector<double> single_grad(const std::vector<double>& w, int idx) const;
+    double single_val(const Eigen::VectorXd& w, int idx) const;
+    Eigen::VectorXd single_grad(const Eigen::VectorXd& w, int idx) const;
 
-    double full_val(const std::vector<double>& w) const;
-    std::vector<double> full_grad(const std::vector<double>& w) const;
+    double full_val(const Eigen::VectorXd& w) const;
+    Eigen::VectorXd full_grad(const Eigen::VectorXd& w) const;
 
     double phi_prime(double mu) const;
     double phi_double_prime(double mu) const;
 
-    const std::vector<std::vector<double>>& Z;
+    const Eigen::MatrixXd& Z;
     double lambda;
 };
 

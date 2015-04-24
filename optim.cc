@@ -1,13 +1,13 @@
 #include "optim.h"
 #include <random>
-#include <vector>
 #include "logger.h"
+#include <iostream>
 
-Logger SGD(const LogRegOracle& func, const std::vector<double>& w0, double alpha, int maxiter)
+Logger SGD(const LogRegOracle& func, const Eigen::VectorXd& w0, double alpha, int maxiter)
 {
     Logger logger(func);
 
-    std::vector<double> w = w0;
+    Eigen::VectorXd w = w0;
 
     /* prepare random number generator */
     std::random_device rd;
@@ -21,12 +21,10 @@ Logger SGD(const LogRegOracle& func, const std::vector<double>& w0, double alpha
     for (int iter = 0; iter < maxiter; ++iter) {
         int idx = dis(gen);
 
-        std::vector<double> gi = func.single_grad(w, idx);
+        Eigen::VectorXd gi = func.single_grad(w, idx);
 
         /* make a step w -= alpha*gi */
-        for (int j = 0; j < int(w.size()); ++j) {
-            w[j] -= alpha * gi[j];
-        }
+        w -= alpha * gi;
 
         /* log current point */
         logger.log(w);
@@ -35,11 +33,11 @@ Logger SGD(const LogRegOracle& func, const std::vector<double>& w0, double alpha
     return logger;
 }
 
-Logger SAG(const LogRegOracle& func, const std::vector<double>& w0, double alpha, int maxiter)
+Logger SAG(const LogRegOracle& func, const Eigen::VectorXd& w0, double alpha, int maxiter)
 {
     Logger logger(func);
 
-    std::vector<double> w = w0;
+    Eigen::VectorXd w = w0;
 
     /* prepare random number generator */
     std::random_device rd;
@@ -47,9 +45,9 @@ Logger SAG(const LogRegOracle& func, const std::vector<double>& w0, double alpha
     std::uniform_int_distribution<> dis(0, func.n_samples() - 1);
 
     /* initialisation */
-    std::vector<double> phi_prime(func.n_samples(), 0.0);
+    Eigen::VectorXd phi_prime = Eigen::VectorXd::Zero(func.n_samples());
 
-    std::vector<double> g(w.size(), 0.0);
+    Eigen::VectorXd g = Eigen::VectorXd::Zero(w.size());
 
     /* log the initial point */
     logger.log(w);
@@ -60,27 +58,20 @@ Logger SAG(const LogRegOracle& func, const std::vector<double>& w0, double alpha
         int idx = dis(gen);
 
         /* compute mu = z[i]' * w */
-        double mu = 0.0;
-        for (int j = 0; j < int(w.size()); ++j) {
-            mu += func.Z[idx][j] * w[j];
-        }
+        double mu = func.Z.row(idx).dot(w);
 
         /* compute phi' at mu */
         double phi_prime_new = func.phi_prime(mu);
 
         /* update g */
-        double delta_phi_prime = phi_prime_new - phi_prime[idx];
-        for (int j = 0; j < int(w.size()); ++j) {
-            g[j] += (1.0 / func.n_samples()) * delta_phi_prime * func.Z[idx][j];
-        }
+        double delta_phi_prime = phi_prime_new - phi_prime(idx);
+        g += (1.0 / func.n_samples()) * delta_phi_prime * func.Z.row(idx).transpose();
 
         /* update model */
-        phi_prime[idx] = phi_prime_new;
+        phi_prime(idx) = phi_prime_new;
 
         /* make a step w -= alpha * (g + lambda * w) */
-        for (int j = 0; j < int(w.size()); ++j) {
-            w[j] -= alpha * (g[j] + func.lambda * w[j]);
-        }
+        w -= alpha * (g + func.lambda * w);
 
         /* log current point */
         logger.log(w);
@@ -95,25 +86,22 @@ Logger SAG(const LogRegOracle& func, const std::vector<double>& w0, double alpha
 /* ============================================================================================================== */
 /* ============================================================================================================== */
 
-Logger SO2(const LogRegOracle& func, const std::vector<double>& w0, int maxiter)
+Logger SO2(const LogRegOracle& func, const Eigen::VectorXd& w0, int maxiter)
 {
     Logger logger(func);
 
-    std::vector<double> w = w0;
+    Eigen::VectorXd w = w0;
 
     /* initialisation */
-    std::vector<double> phi_prime(func.n_samples(), 0.0);
-    std::vector<double> phi_double_prime(func.n_samples(), 0.0);
-    std::vector<double> mu(func.n_samples(), 0.0);
+    Eigen::VectorXd phi_prime = Eigen::VectorXd::Zero(func.n_samples());
+    Eigen::VectorXd phi_double_prime = Eigen::VectorXd::Zero(func.n_samples());
+    Eigen::VectorXd mu = Eigen::VectorXd::Zero(func.n_samples());
 
-    std::vector<double> g(w.size(), 0.0);
-    std::vector<double> p(w.size(), 0.0);
+    Eigen::VectorXd g = Eigen::VectorXd::Zero(w.size());
+    Eigen::VectorXd p = Eigen::VectorXd::Zero(w.size());
 
     /* initialise B = lambda^{-1}*I */
-    std::vector<std::vector<double>> B(w.size(), std::vector<double>(w.size(), 0.0));
-    for (int j = 0; j < int(w.size()); ++j) {
-        B[j][j] = 1.0 / func.lambda;
-    }
+    Eigen::MatrixXd B = (1.0 / func.lambda) * Eigen::MatrixXd::Identity(w.size(), w.size());
 
     int idx = -1;
 
@@ -126,74 +114,41 @@ Logger SO2(const LogRegOracle& func, const std::vector<double>& w0, int maxiter)
         idx = (idx + 1) % func.n_samples();
 
         /* compute mu[i] = z[i]' * v[i] where v[i] = w */
-        double mu_new = 0.0;
-        for (int j = 0; j < int(w.size()); ++j) {
-            mu_new += func.Z[idx][j] * w[j];
-        }
+        double mu_new = func.Z.row(idx).dot(w);
 
         /* compute phi' and phi'' at mui */
         double phi_prime_new = func.phi_prime(mu_new);
         double phi_double_prime_new = func.phi_double_prime(mu_new);
 
         /* update g */
-        double delta_phi_prime = phi_prime_new - phi_prime[idx];
-        for (int j = 0; j < int(w.size()); ++j) {
-            g[j] += (1.0 / func.n_samples()) * delta_phi_prime * func.Z[idx][j];
-        }
+        double delta_phi_prime = phi_prime_new - phi_prime(idx);
+        g += (1.0 / func.n_samples()) * delta_phi_prime * func.Z.row(idx).transpose();
 
         /* update p */
-        double delta_phi_double_prime_mu = phi_double_prime_new * mu_new - phi_double_prime[idx] * mu[idx];
-        for (int j = 0; j < int(w.size()); ++j) {
-            p[j] += (1.0 / func.n_samples()) * delta_phi_double_prime_mu * func.Z[idx][j];
-        }
+        double delta_phi_double_prime_mu = phi_double_prime_new * mu_new - phi_double_prime(idx) * mu(idx);
+        p += (1.0 / func.n_samples()) * delta_phi_double_prime_mu * func.Z.row(idx).transpose();
 
         /* update B */
-        double delta_phi_double_prime = phi_double_prime_new - phi_double_prime[idx];
+        double delta_phi_double_prime = phi_double_prime_new - phi_double_prime(idx);
         double coef = (1.0 / func.n_samples()) * delta_phi_double_prime;
         /* calculate bzi = B * z_i */
-        std::vector<double> bzi(w.size());
-        for (int j1 = 0; j1 < int(w.size()); ++j1) {
-            bzi[j1] = 0.0;
-            for (int j2 = 0; j2 < int(w.size()); ++j2) {
-                bzi[j1] += B[j1][j2] * func.Z[idx][j2];
-            }
-        }
+        Eigen::VectorXd bzi = B * func.Z.row(idx).transpose();
         /* calculate z_i' * bzi */
-        double zi_bzi = 0.0;
-        for (int j = 0; j < int(w.size()); ++j) {
-            zi_bzi += func.Z[idx][j] * bzi[j];
-        }
+        double zi_bzi = func.Z.row(idx).dot(bzi);
         /* modify B */
-        for (int j1 = 0; j1 < int(w.size()); ++j1) {
-            for (int j2 = 0; j2 < int(w.size()); ++j2) {
-                B[j1][j2] -= (coef * bzi[j1] * bzi[j2]) / (1 + coef * zi_bzi);
-            }
-        }
+        B -= (coef / (1 + coef * zi_bzi)) * bzi * bzi.transpose();
 
         /* update model */
-        mu[idx] = mu_new;
-        phi_prime[idx] = phi_prime_new;
-        phi_double_prime[idx] = phi_double_prime_new;
+        mu(idx) = mu_new;
+        phi_prime(idx) = phi_prime_new;
+        phi_double_prime(idx) = phi_double_prime_new;
 
-        /* calculate direction */
-        std::vector<double> d(w.size());
-        /* calculate B_gmp = B * (g - p) */
-        std::vector<double> B_gmp(w.size());
-        for (int j1 = 0; j1 < int(w.size()); ++j1) {
-            B_gmp[j1] = 0.0;
-            for (int j2 = 0; j2 < int(w.size()); ++j2) {
-                B_gmp[j1] += B[j1][j2] * (g[j2] - p[j2]);
-            }
-        }
-        for (int j = 0; j < int(w.size()); ++j) {
-            d[j] = w[j] + B_gmp[j];
-        }
+        /* calculate direction d = -(w + B * (g - p)) */
+        Eigen::VectorXd d = -(w + B * (g - p));
 
-        /* make a step w -= alpha*ag */
+        /* make a step w += alpha*d */
         double alpha = 1.0;
-        for (int j = 0; j < int(w.size()); ++j) {
-            w[j] -= alpha * d[j];
-        }
+        w += alpha * d;
 
         /* log current point */
         logger.log(w);

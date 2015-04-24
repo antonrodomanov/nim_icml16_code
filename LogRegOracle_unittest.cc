@@ -1,15 +1,19 @@
 #include "LogRegOracle.h"
 #include "gtest/gtest.h"
-#include <vector>
+#include <Eigen/Dense>
 
 TEST(NSamplesTest, Basic) {
-    std::vector<std::vector<double>> Z {
-        {0.1, -0.01},
-        {-0.01, -0.1},
-        {0.3, 0.1}
-    };
-    std::vector<double> w {0.1, -0.4};
-    double lambda = 0.1;
+    Eigen::MatrixXd Z;
+    Eigen::VectorXd w;
+    double lambda;
+
+    Z.resize(3, 2);
+    Z << 0.1, -0.01,
+         -0.01, -0.1,
+         0.3, 0.1;
+    w.resize(2);
+    w << 0.1, -0.4;
+    lambda = 0.1;
 
     LogRegOracle func(Z, lambda);
 
@@ -17,13 +21,17 @@ TEST(NSamplesTest, Basic) {
 }
 
 TEST(SingleValTest, Basic) {
-    std::vector<std::vector<double>> Z {
-        {0.1, -0.01},
-        {-0.01, -0.1},
-        {0.3, 0.1}
-    };
-    std::vector<double> w {0.1, -0.4};
-    double lambda = 0.1;
+    Eigen::MatrixXd Z;
+    Eigen::VectorXd w;
+    double lambda;
+
+    Z.resize(3, 2);
+    Z << 0.1, -0.01,
+         -0.01, -0.1,
+         0.3, 0.1;
+    w.resize(2);
+    w << 0.1, -0.4;
+    lambda = 0.1;
 
     LogRegOracle func(Z, lambda);
 
@@ -31,13 +39,17 @@ TEST(SingleValTest, Basic) {
 }
 
 TEST(SingleValTest, Overflow) {
-    std::vector<std::vector<double>> Z {
-        {0.1, -0.01},
-        {-0.01, -0.1},
-        {0.3, 0.1}
-    };
-    std::vector<double> w {1e5, 1e5};
-    double lambda = 0.1;
+    Eigen::MatrixXd Z;
+    Eigen::VectorXd w;
+    double lambda;
+
+    Z.resize(3, 2);
+    Z << 0.1, -0.01,
+         -0.01, -0.1,
+         0.3, 0.1;
+    w.resize(2);
+    w << 1e5, 1e5;
+    lambda = 0.1;
 
     LogRegOracle func(Z, lambda);
 
@@ -45,29 +57,37 @@ TEST(SingleValTest, Overflow) {
 }
 
 TEST(SingleGradTest, Basic) {
-    std::vector<std::vector<double>> Z {
-        {0.1, -0.01},
-        {-0.01, -0.1},
-        {0.3, 0.1}
-    };
-    std::vector<double> w {0.1, -0.4};
-    double lambda = 0.1;
+    Eigen::MatrixXd Z;
+    Eigen::VectorXd w;
+    double lambda;
+
+    Z.resize(3, 2);
+    Z << 0.1, -0.01,
+         -0.01, -0.1,
+         0.3, 0.1;
+    w.resize(2);
+    w << 0.1, -0.4;
+    lambda = 0.1;
 
     LogRegOracle func(Z, lambda);
 
-    std::vector<double> gi = func.single_grad(w, 1);
-    EXPECT_NEAR(gi[0], 0.00490251, 1e-5);
-    EXPECT_NEAR(gi[1], -0.09097488, 1e-5);
+    Eigen::VectorXd gi = func.single_grad(w, 1);
+    EXPECT_NEAR(gi(0), 0.00490251, 1e-5);
+    EXPECT_NEAR(gi(1), -0.09097488, 1e-5);
 }
 
 TEST(FullValTest, Basic) {
-    std::vector<std::vector<double>> Z {
-        {0.1, -0.01},
-        {-0.01, -0.1},
-        {0.3, 0.1}
-    };
-    std::vector<double> w {0.1, -0.4};
-    double lambda = 0.1;
+    Eigen::MatrixXd Z;
+    Eigen::VectorXd w;
+    double lambda;
+
+    Z.resize(3, 2);
+    Z << 0.1, -0.01,
+         -0.01, -0.1,
+         0.3, 0.1;
+    w.resize(2);
+    w << 0.1, -0.4;
+    lambda = 0.1;
 
     LogRegOracle func(Z, lambda);
 
@@ -75,17 +95,21 @@ TEST(FullValTest, Basic) {
 }
 
 TEST(FullGradTest, Basic) {
-    std::vector<std::vector<double>> Z {
-        {0.1, -0.01},
-        {-0.01, -0.1},
-        {0.3, 0.1}
-    };
-    std::vector<double> w {0.1, -0.4};
-    double lambda = 0.1;
+    Eigen::MatrixXd Z;
+    Eigen::VectorXd w;
+    double lambda;
+
+    Z.resize(3, 2);
+    Z << 0.1, -0.01,
+         -0.01, -0.1,
+         0.3, 0.1;
+    w.resize(2);
+    w << 0.1, -0.4;
+    lambda = 0.1;
 
     LogRegOracle func(Z, lambda);
 
-    std::vector<double> g = func.full_grad(w);
-    EXPECT_NEAR(g[0], 0.07483417, 1e-5);
-    EXPECT_NEAR(g[1], -0.04208662, 1e-5);
+    Eigen::VectorXd g = func.full_grad(w);
+    EXPECT_NEAR(g(0), 0.07483417, 1e-5);
+    EXPECT_NEAR(g(1), -0.04208662, 1e-5);
 }

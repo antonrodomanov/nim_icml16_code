@@ -3,6 +3,7 @@
 #include <cstdio>
 #include "special.h"
 #include <ctime>
+#include <iostream>
 
 Logger::Logger(const LogRegOracle& func) :
     func(func),
@@ -12,7 +13,7 @@ Logger::Logger(const LogRegOracle& func) :
     mainten_time(0.0)
     {}
 
-void Logger::log(const std::vector<double>& w)
+void Logger::log(const Eigen::VectorXd& w)
 {
     if (n_calls % how_often == 0) {
         /* for counting time spent on this maintenance code */
@@ -20,7 +21,8 @@ void Logger::log(const std::vector<double>& w)
 
         double epoch = double(n_calls) / func.n_samples();
         double f = func.full_val(w);
-        double norm_g = infnorm(func.full_grad(w));
+        Eigen::VectorXd g = func.full_grad(w);
+        double norm_g = g.lpNorm<Eigen::Infinity>();
         double elaps = double(clock() - t_start) / CLOCKS_PER_SEC;
         /* this code is just for maintenance, don't add its time to the optimiser's time */
         elaps -= mainten_time;

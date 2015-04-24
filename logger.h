@@ -2,14 +2,15 @@
 #define LOGGER_H
 
 #include "LogRegOracle.h"
-#include <vector>
 #include <ctime>
+
+#include <Eigen/Dense>
 
 class Logger {
 public:
     Logger(const LogRegOracle& func);
 
-    void log(const std::vector<double>& w);
+    void log(const Eigen::VectorXd& w);
 
     std::vector<double> trace_epoch;
     std::vector<double> trace_elaps;

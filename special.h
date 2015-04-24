@@ -9,7 +9,4 @@ double logaddexp(double a, double b);
 /* Sigmoid function */
 double sigm(double x);
 
-/* Calculate infinity norm of vector */
-double infnorm(const std::vector<double>& a);
-
 #endif
