@@ -2,4 +2,4 @@
 *.a
 datasets
 main
-LogRegOracle_unittest
+LogRegOracle_test

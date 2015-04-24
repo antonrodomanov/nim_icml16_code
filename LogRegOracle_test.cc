@@ -1,6 +1,7 @@
-#include "LogRegOracle.h"
-#include "gtest/gtest.h"
 #include <Eigen/Dense>
+#include <gtest/gtest.h>
+
+#include "LogRegOracle.h"
 
 TEST(NSamplesTest, Basic) {
     Eigen::MatrixXd Z;

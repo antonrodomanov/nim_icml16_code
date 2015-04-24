@@ -29,7 +29,7 @@ CXXFLAGS += -O2 -Wall -Wextra -pthread -std=c++11
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-TESTS = LogRegOracle_unittest
+TESTS = LogRegOracle_test
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -74,11 +74,11 @@ gtest_main.a : gtest-all.o gtest_main.o
 LogRegOracle.o : $(USER_DIR)/LogRegOracle.cc $(USER_DIR)/LogRegOracle.h $(USER_DIR)/special.h $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/LogRegOracle.cc
 
-LogRegOracle_unittest.o : $(USER_DIR)/LogRegOracle_unittest.cc \
+LogRegOracle_test.o : $(USER_DIR)/LogRegOracle_test.cc \
                      $(USER_DIR)/LogRegOracle.h $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/LogRegOracle_unittest.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/LogRegOracle_test.cc
 
-LogRegOracle_unittest : LogRegOracle.o LogRegOracle_unittest.o special.o gtest_main.a
+LogRegOracle_test : LogRegOracle.o LogRegOracle_test.o special.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 main : main.o LogRegOracle.o optim.o auxiliary.o special.o datasets.o logger.o
