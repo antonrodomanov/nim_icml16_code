@@ -1,6 +1,7 @@
+#include <cmath>
+
 #include "datasets.h"
 #include "auxiliary.h"
-#include <cmath>
 
 void load_mushrooms(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
@@ -34,16 +35,18 @@ void load_covtype(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
-    /* read data */
+    /* set up number of samples and features */
     int N = 50000;
     int D = 78;
 
+    /* allocate memory */
     X.resize(N, D);
     y.resize(N);
 
+    /* read design matrix X */
     int dummy;
     FILE* file;
-    file = fopen("datasets/quantum_scaled.X.dat", "r");
+    file = fopen("datasets/quantum.X.scaled.dat", "r");
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < D; ++j) {
             dummy = fscanf(file, "%lf", &X(i, j));
@@ -52,7 +55,8 @@ void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y)
     fclose(file);
     dummy += 0;
 
-    file = fopen("datasets/quantum_scaled.y.dat", "r");
+    /* read labels y */
+    file = fopen("datasets/quantum.y.dat", "r");
     for (int i = 0; i < N; ++i) {
         dummy = fscanf(file, "%d", &y(i));
     }
@@ -61,13 +65,15 @@ void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_alpha(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
-    /* read data */
+    /* set up number of samples and features */
     int N = 500000;
     int D = 500;
 
+    /* allocate memory */
     X.resize(N, D);
     y.resize(N);
 
+    /* read design matrix X */
     int dummy;
     FILE* file;
     file = fopen("datasets/alpha_train.dat", "r");
@@ -82,6 +88,7 @@ void load_alpha(Eigen::MatrixXd& X, Eigen::VectorXi& y)
     fclose(file);
     dummy += 0;
 
+    /* read labels y */
     file = fopen("datasets/alpha_train.lab", "r");
     for (int i = 0; i < N; ++i) {
         dummy = fscanf(file, "%d", &y(i));
