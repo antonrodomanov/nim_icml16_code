@@ -37,11 +37,12 @@ Eigen::VectorXd LogRegOracle::single_grad(const Eigen::VectorXd& w, int idx) con
 
 double LogRegOracle::full_val(const Eigen::VectorXd& w) const
 {
-    double f = 0.0;
-    for (int i = 0; i < Z.rows(); ++i) {
-        f += single_val(w, i);
-    }
+    Eigen::VectorXd zw = Z * w;
+
+    double f;
+    f = zw.unaryExpr(std::ptr_fun(logaddexp0)).sum();
     f /= Z.rows();
+    f += (lambda / 2) * w.squaredNorm();
     return f;
 }
 
