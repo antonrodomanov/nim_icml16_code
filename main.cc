@@ -1,12 +1,7 @@
-#include <cstdio>
-#include <cassert>
-#include <cmath>
-#include <vector>
 #include <iostream>
-#include <fstream>
-#include <string>
-#include <algorithm>
+#include <cstdio>
 
+#include <tclap/CmdLine.h>
 #include <Eigen/Dense>
 
 #include "auxiliary.h"
@@ -15,27 +10,31 @@
 #include "optim.h"
 #include "logger.h"
 
-#include <tclap/CmdLine.h>
-
 int main(int argc, char* argv[])
 {
+    /* ============================= Parse commmand-line arguments ==================================== */
     std::string method;
     std::string dataset;
     double max_epochs = 1.0;
 
     try {
-        TCLAP::CmdLine cmd("Run numerical optimiser for training logistic regression.", ' ', "0.1");
+        /* prepare parser */
+        TCLAP::CmdLine cmd("Run a numerical optimiser for training logistic regression.", ' ', "0.1");
 
+        /* specify all options */
         TCLAP::ValueArg<std::string> arg_method("", "method", "Optimisation method (SGD, SAG, SO2)", true, "", "string");
         TCLAP::ValueArg<std::string> arg_dataset("", "dataset", "Dataset (a9a, mushrooms, w8a, covtype, quantum, alpha)", true, "", "string");
         TCLAP::ValueArg<double> arg_max_epochs("", "max_epochs", "Maximum number of epochs", true, -1.0, "double");
 
+        /* add options to parser */
         cmd.add(arg_method);
         cmd.add(arg_dataset);
         cmd.add(arg_max_epochs);
 
+        /* parse command-line string */
         cmd.parse(argc, argv);
 
+        /* retrieve option values */
         method = arg_method.getValue();
         dataset = arg_dataset.getValue();
         max_epochs = arg_max_epochs.getValue();
@@ -43,13 +42,10 @@ int main(int argc, char* argv[])
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
 
-    /* ========================================================================== */
-    /* ========================================================================== */
-    /* ========================================================================== */
+    /* ============================= Load dataset ==================================== */
 
     Eigen::MatrixXd Z;
     Eigen::VectorXi y;
-    double lambda;
 
     if (dataset == "a9a") {
         fprintf(stderr, "Load a9a\n");
@@ -74,41 +70,53 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    /* multiply each sample Z[i] by -y[i] */
-    Z.array().colwise() *= -y.cast<double>().array();
+    /* ============================= Construct matrix Z ==================================== */
 
-    lambda = 1.0 / Z.rows();
+    Z.array().colwise() *= -y.cast<double>().array(); // multiply each sample X[i] by -y[i]
 
-    LogRegOracle func(Z, lambda);
-    Eigen::VectorXd w0 = Eigen::VectorXd::Zero(Z.cols());
+    /* ============================= Set up parameters ==================================== */
 
-    int maxiter = max_epochs * Z.rows();
+    double lambda = 1.0 / Z.rows(); // regularisation coefficient
+    Eigen::VectorXd w0 = Eigen::VectorXd::Zero(Z.cols()); // starting point
+    int maxiter = max_epochs * Z.rows(); // maximum number of iteration
 
-    Logger logger(func);
-    Eigen::VectorXd w;
+    /* =============================== Run optimiser ======================================= */
 
+    LogRegOracle func(Z, lambda); // prepare oracle
+    Logger logger(func); // prepare logger
+
+    /* run chosen method */
     if (method == "SAG") {
-        fprintf(stderr, "Use method SAG\n");
-
-        /* estimate the Lipschitz constant */
+        /* estimate the Lipschitz constant and step length */
         double L = 0.25 * Z.rowwise().squaredNorm().maxCoeff() + lambda;
-
         double alpha = 1.0 / L;
-        fprintf(stderr, "SAG: L=%g, alpha=%g\n", L, alpha);
-        w = SAG(func, logger, w0, alpha, maxiter);
-    } else if (method == "SGD") {
-        fprintf(stderr, "Use method SGD\n");
 
+        /* print summary */
+        fprintf(stderr, "Use method SAG: L=%g, alpha=%g\n", L, alpha);
+
+        /* rum method */
+        SAG(func, logger, w0, alpha, maxiter);
+    } else if (method == "SGD") {
+        /* choose step length */
         double alpha = 1e-4;
-        w = SGD(func, logger, w0, alpha, maxiter);
+
+        /* print summary */
+        fprintf(stderr, "Use method SGD: alpha=%g\n", alpha);
+
+        /* run method */
+        SGD(func, logger, w0, alpha, maxiter);
     } else if (method == "SO2") {
+        /* print summary */
         fprintf(stderr, "Use method SO2\n");
 
-        w = SO2(func, logger, w0, maxiter);
+        /* run method */
+        SO2(func, logger, w0, maxiter);
     } else {
         fprintf(stderr, "Unknown method %s\n", method.c_str());
         return 1;
     }
+
+    /* =============================== Print the trace ======================================= */
 
     printf("%9s %9s %15s %15s\n", "epoch", "elapsed", "val", "norm_grad");
     for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
