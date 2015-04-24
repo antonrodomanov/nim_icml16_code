@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <ctime>
 
-#include "logger.h"
+#include "Logger.h"
 #include "special.h"
 
 Logger::Logger(const LogRegOracle& func, double n_logs_per_epoch) :

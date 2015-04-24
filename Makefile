@@ -90,7 +90,7 @@ main.o : $(USER_DIR)/main.cc $(USER_DIR)/auxiliary.h
 special.o : $(USER_DIR)/special.cc $(USER_DIR)/special.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/special.cc
 
-optim.o : $(USER_DIR)/optim.cc $(USER_DIR)/optim.h $(USER_DIR)/LogRegOracle.h $(USER_DIR)/logger.h
+optim.o : $(USER_DIR)/optim.cc $(USER_DIR)/optim.h $(USER_DIR)/LogRegOracle.h $(USER_DIR)/Logger.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/optim.cc
 
 auxiliary.o : $(USER_DIR)/auxiliary.cc $(USER_DIR)/auxiliary.h
@@ -99,5 +99,5 @@ auxiliary.o : $(USER_DIR)/auxiliary.cc $(USER_DIR)/auxiliary.h
 datasets.o : $(USER_DIR)/datasets.cc $(USER_DIR)/datasets.h $(USER_DIR)/auxiliary.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/datasets.cc
 
-logger.o : $(USER_DIR)/logger.cc $(USER_DIR)/logger.h $(USER_DIR)/LogRegOracle.h
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/logger.cc
+logger.o : $(USER_DIR)/Logger.cc $(USER_DIR)/Logger.h $(USER_DIR)/LogRegOracle.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/Logger.cc

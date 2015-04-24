@@ -8,7 +8,7 @@
 #include "datasets.h"
 #include "LogRegOracle.h"
 #include "optim.h"
-#include "logger.h"
+#include "Logger.h"
 
 int main(int argc, char* argv[])
 {

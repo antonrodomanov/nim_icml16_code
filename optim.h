@@ -2,7 +2,7 @@
 #define OPTIM_H
 
 #include "LogRegOracle.h"
-#include "logger.h"
+#include "Logger.h"
 
 #include <Eigen/Dense>
 

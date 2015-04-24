@@ -1,6 +1,6 @@
 #include "optim.h"
 #include <random>
-#include "logger.h"
+#include "Logger.h"
 #include <iostream>
 
 Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, int maxiter)
