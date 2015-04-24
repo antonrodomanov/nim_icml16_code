@@ -57,9 +57,6 @@ void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y)
         dummy = fscanf(file, "%d", &y(i));
     }
     fclose(file);
-
-    /* transform y from {1, 2} to {-1, 1} */
-    y = 2 * (y.array() - 1) - 1;
 }
 
 void load_alpha(Eigen::MatrixXd& X, Eigen::VectorXi& y)
