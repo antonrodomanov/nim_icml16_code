@@ -6,10 +6,10 @@
 
 #include <Eigen/Dense>
 
-Logger SGD(const LogRegOracle& func, const Eigen::VectorXd& w0, double alpha, int maxiter);
+Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, int maxiter);
 
-Logger SAG(const LogRegOracle& func, const Eigen::VectorXd& w0, double alpha, int maxiter);
+Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, int maxiter);
 
-Logger SO2(const LogRegOracle& func, const Eigen::VectorXd& w0, int maxiter);
+Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, int maxiter);
 
 #endif

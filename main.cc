@@ -84,6 +84,9 @@ int main(int argc, char* argv[])
 
     int maxiter = max_epochs * Z.rows();
 
+    Logger logger(func);
+    Eigen::VectorXd w;
+
     if (method == "SAG") {
         fprintf(stderr, "Use method SAG\n");
 
@@ -92,35 +95,24 @@ int main(int argc, char* argv[])
 
         double alpha = 1.0 / L;
         fprintf(stderr, "SAG: L=%g, alpha=%g\n", L, alpha);
-        Logger logger = SAG(func, w0, alpha, maxiter);
-
-        printf("%9s %9s %15s %15s\n", "epoch", "elapsed", "val", "norm_grad");
-        for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
-            printf("%9.2f %9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
-        }
+        w = SAG(func, logger, w0, alpha, maxiter);
     } else if (method == "SGD") {
         fprintf(stderr, "Use method SGD\n");
 
         double alpha = 1e-4;
-
-        Logger logger = SGD(func, w0, alpha, maxiter);
-
-        printf("%9s %9s %15s %15s\n", "epoch", "elapsed", "val", "norm_grad");
-        for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
-            printf("%9.2f %9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
-        }
+        w = SGD(func, logger, w0, alpha, maxiter);
     } else if (method == "SO2") {
         fprintf(stderr, "Use method SO2\n");
 
-        Logger logger = SO2(func, w0, maxiter);
-
-        printf("%9s %9s %15s %15s\n", "epoch", "elapsed", "val", "norm_grad");
-        for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
-            printf("%9.2f %9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
-        }
+        w = SO2(func, logger, w0, maxiter);
     } else {
         fprintf(stderr, "Unknown method %s\n", method.c_str());
         return 1;
+    }
+
+    printf("%9s %9s %15s %15s\n", "epoch", "elapsed", "val", "norm_grad");
+    for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
+        printf("%9.2f %9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
     }
 
     return 0;

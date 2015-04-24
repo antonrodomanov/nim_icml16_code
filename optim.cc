@@ -3,10 +3,8 @@
 #include "logger.h"
 #include <iostream>
 
-Logger SGD(const LogRegOracle& func, const Eigen::VectorXd& w0, double alpha, int maxiter)
+Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, int maxiter)
 {
-    Logger logger(func);
-
     Eigen::VectorXd w = w0;
 
     /* prepare random number generator */
@@ -30,13 +28,11 @@ Logger SGD(const LogRegOracle& func, const Eigen::VectorXd& w0, double alpha, in
         logger.log(w);
     }
 
-    return logger;
+    return w;
 }
 
-Logger SAG(const LogRegOracle& func, const Eigen::VectorXd& w0, double alpha, int maxiter)
+Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, int maxiter)
 {
-    Logger logger(func);
-
     Eigen::VectorXd w = w0;
 
     /* prepare random number generator */
@@ -77,7 +73,7 @@ Logger SAG(const LogRegOracle& func, const Eigen::VectorXd& w0, double alpha, in
         logger.log(w);
     }
 
-    return logger;
+    return w;
 }
 
 /* ============================================================================================================== */
@@ -86,10 +82,8 @@ Logger SAG(const LogRegOracle& func, const Eigen::VectorXd& w0, double alpha, in
 /* ============================================================================================================== */
 /* ============================================================================================================== */
 
-Logger SO2(const LogRegOracle& func, const Eigen::VectorXd& w0, int maxiter)
+Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, int maxiter)
 {
-    Logger logger(func);
-
     Eigen::VectorXd w = w0;
 
     /* initialisation */
@@ -154,5 +148,5 @@ Logger SO2(const LogRegOracle& func, const Eigen::VectorXd& w0, int maxiter)
         logger.log(w);
     }
 
-    return logger;
+    return w;
 }
