@@ -1,150 +1,155 @@
-#include "optim.h"
-#include <random>
-#include "Logger.h"
 #include <iostream>
+#include <random>
 
+#include "optim.h"
+#include "Logger.h"
+
+/* ****************************************************************************************************************** */
+/* *************************************************** SGD ********************************************************** */
+/* ****************************************************************************************************************** */
 Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, int maxiter)
 {
-    Eigen::VectorXd w = w0;
-
     /* prepare random number generator */
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, func.n_samples() - 1);
 
-    /* log the initial point */
+    /* assign starting point */
+    Eigen::VectorXd w = w0;
+
+    /* log initial position */
     logger.log(w);
 
     /* main loop */
     for (int iter = 0; iter < maxiter; ++iter) {
-        int idx = dis(gen);
+        /* select random sample i */
+        int i = dis(gen);
 
-        Eigen::VectorXd gi = func.single_grad(w, idx);
+        /* compute its gradient g_i = nabla f_i(w) */
+        Eigen::VectorXd gi = func.single_grad(w, i);
 
-        /* make a step w -= alpha*gi */
+        /* make a step w -= alpha * g_i */
         w -= alpha * gi;
 
-        /* log current point */
+        /* log current position */
         logger.log(w);
     }
 
     return w;
 }
 
+/* ****************************************************************************************************************** */
+/* *************************************************** SAG ********************************************************** */
+/* ****************************************************************************************************************** */
 Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, int maxiter)
 {
-    Eigen::VectorXd w = w0;
-
     /* prepare random number generator */
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, func.n_samples() - 1);
 
+    /* assign starting point */
+    Eigen::VectorXd w = w0;
+
     /* initialisation */
-    Eigen::VectorXd phi_prime = Eigen::VectorXd::Zero(func.n_samples());
+    Eigen::VectorXd phi_prime = Eigen::VectorXd::Zero(func.n_samples()); // coefficients phi_prime(i) = phi'(z_i' * v_i)
 
-    Eigen::VectorXd g = Eigen::VectorXd::Zero(w.size());
+    Eigen::VectorXd g = Eigen::VectorXd::Zero(w.size()); // average gradient g = 1/N sum_i nabla f_i(v_i)
 
-    /* log the initial point */
+    /* log initial position */
     logger.log(w);
 
     /* main loop */
     for (int iter = 0; iter < maxiter; ++iter) {
-        /* choose index */
-        int idx = dis(gen);
+        /* select random sample i */
+        int i = dis(gen);
 
-        /* compute mu = z[i]' * w */
-        double mu = func.Z.row(idx).dot(w);
+        /* compute phi_prime_new = phi'(z_i' * w) */
+        double phi_prime_new = func.phi_prime(func.Z.row(i).dot(w));
 
-        /* compute phi' at mu */
-        double phi_prime_new = func.phi_prime(mu);
-
-        /* update g */
-        double delta_phi_prime = phi_prime_new - phi_prime(idx);
-        g += (1.0 / func.n_samples()) * delta_phi_prime * func.Z.row(idx).transpose();
+        /* update g: g += 1/N delta_phi_prime * z_i */
+        double delta_phi_prime = phi_prime_new - phi_prime(i);
+        g += (1.0 / func.n_samples()) * delta_phi_prime * func.Z.row(i).transpose();
 
         /* update model */
-        phi_prime(idx) = phi_prime_new;
+        phi_prime(i) = phi_prime_new;
 
         /* make a step w -= alpha * (g + lambda * w) */
         w -= alpha * (g + func.lambda * w);
 
-        /* log current point */
+        /* log current position */
         logger.log(w);
     }
 
     return w;
 }
 
-/* ============================================================================================================== */
-/* ============================================================================================================== */
-/* ============================================================================================================== */
-/* ============================================================================================================== */
-/* ============================================================================================================== */
-
+/* ****************************************************************************************************************** */
+/* *************************************************** SO2 ********************************************************** */
+/* ****************************************************************************************************************** */
 Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, int maxiter)
 {
+    /* assign starting point */
     Eigen::VectorXd w = w0;
 
     /* initialisation */
-    Eigen::VectorXd phi_prime = Eigen::VectorXd::Zero(func.n_samples());
-    Eigen::VectorXd phi_double_prime = Eigen::VectorXd::Zero(func.n_samples());
-    Eigen::VectorXd mu = Eigen::VectorXd::Zero(func.n_samples());
+    Eigen::VectorXd mu = Eigen::VectorXd::Zero(func.n_samples()); // coefficients mu_i = z_i' * v_i
+    Eigen::VectorXd phi_prime = Eigen::VectorXd::Zero(func.n_samples()); // coefficients phi_prime(i) = phi'(mu_i)
+    Eigen::VectorXd phi_double_prime = Eigen::VectorXd::Zero(func.n_samples()); // coefficients phi_doube_prime(i) = phi''(mu_i)
 
-    Eigen::VectorXd g = Eigen::VectorXd::Zero(w.size());
-    Eigen::VectorXd p = Eigen::VectorXd::Zero(w.size());
+    Eigen::VectorXd g = Eigen::VectorXd::Zero(w.size()); // average gradient g = 1/N sum_i nabla f_i(v_i)
+    Eigen::VectorXd p = Eigen::VectorXd::Zero(w.size()); // vector p = 1/N sum_i nabla^2 f_i(v_i) v_i
 
-    /* initialise B = lambda^{-1}*I */
-    Eigen::MatrixXd B = (1.0 / func.lambda) * Eigen::MatrixXd::Identity(w.size(), w.size());
+    Eigen::MatrixXd B = (1.0 / func.lambda) * Eigen::MatrixXd::Identity(w.size(), w.size()); // inverse average hessian B = (1/N sum_i nabla^2 f_i(v_i))^{-1}
 
-    int idx = -1;
+    int i = -1; // sample index; start with -1 because the first one will be (i+1) % N = 0
+    double alpha = 1.0; // step length (always use unit step length for now)
 
-    /* log the initial point */
+    /* log initial position */
     logger.log(w);
 
     /* main loop */
     for (int iter = 0; iter < maxiter; ++iter) {
-        /* choose index */
-        idx = (idx + 1) % func.n_samples();
+        /* choose index; use cyclic order */
+        i = (i + 1) % func.n_samples();
 
-        /* compute mu[i] = z[i]' * v[i] where v[i] = w */
-        double mu_new = func.Z.row(idx).dot(w);
+        /* compute new mu_i = z_i' * v_i where v_i = w */
+        double mu_new = func.Z.row(i).dot(w);
 
-        /* compute phi' and phi'' at mui */
+        /* compute phi' and phi'' at mu_i */
         double phi_prime_new = func.phi_prime(mu_new);
         double phi_double_prime_new = func.phi_double_prime(mu_new);
 
-        /* update g */
-        double delta_phi_prime = phi_prime_new - phi_prime(idx);
-        g += (1.0 / func.n_samples()) * delta_phi_prime * func.Z.row(idx).transpose();
+        /* update g: g += 1/N delta_phi_prime z_i */
+        double delta_phi_prime = phi_prime_new - phi_prime(i);
+        g += (1.0 / func.n_samples()) * delta_phi_prime * func.Z.row(i).transpose();
 
-        /* update p */
-        double delta_phi_double_prime_mu = phi_double_prime_new * mu_new - phi_double_prime(idx) * mu(idx);
-        p += (1.0 / func.n_samples()) * delta_phi_double_prime_mu * func.Z.row(idx).transpose();
+        /* update p: p += 1/N (phi_double_prime_new * mu_new - phi_double_prime * mu) * z_i */
+        double delta_phi_double_prime_mu = phi_double_prime_new * mu_new - phi_double_prime(i) * mu(i);
+        p += (1.0 / func.n_samples()) * delta_phi_double_prime_mu * func.Z.row(i).transpose();
 
-        /* update B */
-        double delta_phi_double_prime = phi_double_prime_new - phi_double_prime(idx);
+        /* update B using Sherman-Morrison-Woodbury formula (rank-1 update) */
+        double delta_phi_double_prime = phi_double_prime_new - phi_double_prime(i);
         double coef = (1.0 / func.n_samples()) * delta_phi_double_prime;
         /* calculate bzi = B * z_i */
-        Eigen::VectorXd bzi = B * func.Z.row(idx).transpose();
+        Eigen::VectorXd bzi = B * func.Z.row(i).transpose();
         /* calculate z_i' * bzi */
-        double zi_bzi = func.Z.row(idx).dot(bzi);
+        double zi_bzi = func.Z.row(i).dot(bzi);
         /* modify B */
         B -= (coef / (1 + coef * zi_bzi)) * bzi * bzi.transpose();
 
         /* update model */
-        mu(idx) = mu_new;
-        phi_prime(idx) = phi_prime_new;
-        phi_double_prime(idx) = phi_double_prime_new;
+        mu(i) = mu_new;
+        phi_prime(i) = phi_prime_new;
+        phi_double_prime(i) = phi_double_prime_new;
 
         /* calculate direction d = -(w + B * (g - p)) */
         Eigen::VectorXd d = -(w + B * (g - p));
 
-        /* make a step w += alpha*d */
-        double alpha = 1.0;
+        /* make a step w += alpha * d */
         w += alpha * d;
 
-        /* log current point */
+        /* log current position */
         logger.log(w);
     }
 
