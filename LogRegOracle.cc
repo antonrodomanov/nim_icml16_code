@@ -1,7 +1,7 @@
-#include "LogRegOracle.h"
-#include <cmath>
-#include "special.h"
 #include <iostream>
+
+#include "LogRegOracle.h"
+#include "special.h"
 
 LogRegOracle::LogRegOracle(const Eigen::MatrixXd& Z, double lambda)
     : Z(Z), lambda(lambda)
@@ -10,54 +10,24 @@ LogRegOracle::LogRegOracle(const Eigen::MatrixXd& Z, double lambda)
 
 int LogRegOracle::n_samples() const { return Z.rows(); }
 
-double LogRegOracle::single_val(const Eigen::VectorXd& w, int idx) const
+double LogRegOracle::single_val(const Eigen::VectorXd& w, int i) const
 {
-    /* compute dot product w' * z[idx] */
-    double wtz = Z.row(idx).dot(w);
-
-    /* compute squared two-norm */
-    double w2 = w.squaredNorm();
-
-    return logaddexp(0, wtz) + (lambda / 2) * w2;
+    return logaddexp(0, Z.row(i).dot(w)) + (lambda / 2) * w.squaredNorm();
 }
 
-Eigen::VectorXd LogRegOracle::single_grad(const Eigen::VectorXd& w, int idx) const
+Eigen::VectorXd LogRegOracle::single_grad(const Eigen::VectorXd& w, int i) const
 {
-    /* compute dot product w' * z[idx] */
-    double wtz = Z.row(idx).dot(w);
-
-    /* take sigmoid */
-    double s = sigm(wtz);
-
-    /* compute requested gradient: g = s * z[idx] + lambda * w */
-    Eigen::VectorXd g = s * Z.row(idx).transpose() + lambda * w;
-
-    return g;
+    return sigm(Z.row(i).dot(w)) * Z.row(i).transpose() + lambda * w;
 }
 
 double LogRegOracle::full_val(const Eigen::VectorXd& w) const
 {
-    Eigen::VectorXd zw = Z * w;
-
-    double f;
-    f = zw.unaryExpr(std::ptr_fun(logaddexp0)).sum();
-    f /= Z.rows();
-    f += (lambda / 2) * w.squaredNorm();
-    return f;
+    return (1.0 / Z.rows()) * (Z * w).unaryExpr(std::ptr_fun(logaddexp0)).sum() + (lambda / 2) * w.squaredNorm();
 }
 
 Eigen::VectorXd LogRegOracle::full_grad(const Eigen::VectorXd& w) const
 {
-    Eigen::VectorXd zw = Z * w;
-
-    Eigen::VectorXd s = zw.unaryExpr(std::ptr_fun(sigm));
-
-    Eigen::VectorXd g;
-    g = Z.transpose() * s;
-    g /= Z.rows();
-    g += lambda * w;
-
-    return g;
+    return (1.0 / Z.rows()) * Z.transpose() * (Z * w).unaryExpr(std::ptr_fun(sigm)) + lambda * w;
 }
 
 double LogRegOracle::phi_prime(double mu) const

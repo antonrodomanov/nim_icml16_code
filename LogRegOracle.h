@@ -10,8 +10,8 @@ public:
 
     int n_samples() const;
 
-    double single_val(const Eigen::VectorXd& w, int idx) const;
-    Eigen::VectorXd single_grad(const Eigen::VectorXd& w, int idx) const;
+    double single_val(const Eigen::VectorXd& w, int i) const;
+    Eigen::VectorXd single_grad(const Eigen::VectorXd& w, int i) const;
 
     double full_val(const Eigen::VectorXd& w) const;
     Eigen::VectorXd full_grad(const Eigen::VectorXd& w) const;
