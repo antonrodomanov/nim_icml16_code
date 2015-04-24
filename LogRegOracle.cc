@@ -48,13 +48,14 @@ double LogRegOracle::full_val(const Eigen::VectorXd& w) const
 
 Eigen::VectorXd LogRegOracle::full_grad(const Eigen::VectorXd& w) const
 {
-    Eigen::VectorXd g = Eigen::VectorXd::Zero(w.size());
-    for (int i = 0; i < Z.rows(); ++i) {
-        g += single_grad(w, i);
-    }
+    Eigen::VectorXd zw = Z * w;
 
-    /* normalise */
+    Eigen::VectorXd s = zw.unaryExpr(std::ptr_fun(sigm));
+
+    Eigen::VectorXd g;
+    g = Z.transpose() * s;
     g /= Z.rows();
+    g += lambda * w;
 
     return g;
 }
