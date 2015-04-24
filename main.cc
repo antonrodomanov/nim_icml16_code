@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
     std::string method;
     std::string dataset;
     double max_epochs = 1.0;
+    double n_logs_per_epoch = 10.0;
 
     try {
         /* prepare parser */
@@ -25,11 +26,13 @@ int main(int argc, char* argv[])
         TCLAP::ValueArg<std::string> arg_method("", "method", "Optimisation method (SGD, SAG, SO2)", true, "", "string");
         TCLAP::ValueArg<std::string> arg_dataset("", "dataset", "Dataset (a9a, mushrooms, w8a, covtype, quantum, alpha)", true, "", "string");
         TCLAP::ValueArg<double> arg_max_epochs("", "max_epochs", "Maximum number of epochs", true, -1.0, "double");
+        TCLAP::ValueArg<double> arg_n_logs_per_epoch("", "n_logs_per_epoch", "Number of requested logs per epoch", false, 10.0, "double");
 
         /* add options to parser */
         cmd.add(arg_method);
         cmd.add(arg_dataset);
         cmd.add(arg_max_epochs);
+        cmd.add(arg_n_logs_per_epoch);
 
         /* parse command-line string */
         cmd.parse(argc, argv);
@@ -38,6 +41,7 @@ int main(int argc, char* argv[])
         method = arg_method.getValue();
         dataset = arg_dataset.getValue();
         max_epochs = arg_max_epochs.getValue();
+        n_logs_per_epoch = arg_n_logs_per_epoch.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
@@ -83,7 +87,7 @@ int main(int argc, char* argv[])
     /* =============================== Run optimiser ======================================= */
 
     LogRegOracle func(Z, lambda); // prepare oracle
-    Logger logger(func); // prepare logger
+    Logger logger(func, n_logs_per_epoch); // prepare logger
 
     /* run chosen method */
     if (method == "SAG") {
