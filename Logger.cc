@@ -52,9 +52,11 @@ bool Logger::log(const Eigen::VectorXd& w)
 
         /* tell the optimiser to terminate if needed */
         if (norm_g < tol) {
+            fprintf(stderr, "Reached gradient tolerance tol=%g\n", tol);
             terminate = true;
         }
         if (opt_allowed_time != -1 && opt_elaps > opt_allowed_time) {
+            fprintf(stderr, "Reached time limit opt_allowed_time=%g\n", opt_allowed_time);
             terminate = true;
         }
 
