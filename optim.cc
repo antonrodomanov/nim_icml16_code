@@ -150,7 +150,7 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         double delta_phi_double_prime = phi_double_prime_new - phi_double_prime(i);
         double coef = (1.0 / N) * delta_phi_double_prime;
         Eigen::VectorXd bzi = B * zi;
-        B -= (coef / (1.0 + coef * zi.dot(bzi))) * bzi * bzi.transpose();
+        B.noalias() -= (coef / (1.0 + coef * zi.dot(bzi))) * bzi * bzi.transpose();
 
         /* update model */
         mu(i) = mu_new;
