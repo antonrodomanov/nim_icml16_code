@@ -149,9 +149,9 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
         /* update B using Sherman-Morrison-Woodbury formula (rank-1 update) */
         double delta_phi_double_prime = phi_double_prime_new - phi_double_prime(i);
-        Eigen::VectorXd bzi = B * zi;
+        Eigen::VectorXd bzi = B.selfadjointView<Eigen::Upper>() * zi;
         double coef = delta_phi_double_prime / (N + delta_phi_double_prime * zi.dot(bzi));
-        B.noalias() -= coef * bzi * bzi.transpose();
+        B.selfadjointView<Eigen::Upper>().rankUpdate(bzi, -coef);
 
         /* update bgmp: bgmp += [1/N (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi' (g_new - p_new)] * bzi */
         bgmp += ((1.0 / N) * (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi.dot(g - p)) * bzi;
