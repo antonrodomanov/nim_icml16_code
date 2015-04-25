@@ -17,6 +17,7 @@ int main(int argc, char* argv[])
     std::string dataset = "";
     double max_epochs = 1.0;
     double n_logs_per_epoch = 10.0;
+    double alpha = 1.0;
 
     try {
         /* prepare parser */
@@ -27,12 +28,14 @@ int main(int argc, char* argv[])
         TCLAP::ValueArg<std::string> arg_dataset("", "dataset", "Dataset (a9a, mushrooms, w8a, covtype, quantum, alpha)", true, dataset, "string");
         TCLAP::ValueArg<double> arg_max_epochs("", "max_epochs", "Maximum number of epochs (default: 1.0)", false, max_epochs, "double");
         TCLAP::ValueArg<double> arg_n_logs_per_epoch("", "n_logs_per_epoch", "Number of requested logs per epoch (default: 10.0)", false, n_logs_per_epoch, "double");
+        TCLAP::ValueArg<double> arg_alpha("", "alpha", "Learning rate for SGD (default: 1.0)", false, alpha, "double");
 
         /* add options to parser */
         cmd.add(arg_method);
         cmd.add(arg_dataset);
         cmd.add(arg_max_epochs);
         cmd.add(arg_n_logs_per_epoch);
+        cmd.add(arg_alpha);
 
         /* parse command-line string */
         cmd.parse(argc, argv);
@@ -42,6 +45,7 @@ int main(int argc, char* argv[])
         dataset = arg_dataset.getValue();
         max_epochs = arg_max_epochs.getValue();
         n_logs_per_epoch = arg_n_logs_per_epoch.getValue();
+        alpha = arg_alpha.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
@@ -101,9 +105,6 @@ int main(int argc, char* argv[])
         /* rum method */
         SAG(func, logger, w0, alpha, maxiter);
     } else if (method == "SGD") {
-        /* choose step length */
-        double alpha = 1e-4;
-
         /* print summary */
         fprintf(stderr, "Use method SGD: alpha=%g\n", alpha);
 
