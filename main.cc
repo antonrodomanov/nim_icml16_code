@@ -63,13 +63,13 @@ int main(int argc, char* argv[])
         );
 
         /* add options to parser */
-        cmd.add(arg_method);
-        cmd.add(arg_dataset);
-        cmd.add(arg_max_epochs);
+        cmd.add(arg_opt_allowed_time);
+        cmd.add(arg_tol);
         cmd.add(arg_n_logs_per_epoch);
         cmd.add(arg_alpha);
-        cmd.add(arg_tol);
-        cmd.add(arg_opt_allowed_time);
+        cmd.add(arg_max_epochs);
+        cmd.add(arg_dataset);
+        cmd.add(arg_method);
 
         /* parse command-line string */
         cmd.parse(argc, argv);
