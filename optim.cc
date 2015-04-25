@@ -32,7 +32,7 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         w -= alpha * gi;
 
         /* log current position */
-        logger.log(w);
+        if (logger.log(w)) break;
     }
 
     return w;
@@ -87,7 +87,7 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         w -= alpha * (g + lambda * w);
 
         /* log current position */
-        logger.log(w);
+        if (logger.log(w)) break;
     }
 
     return w;
@@ -165,7 +165,7 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         w -= alpha * (w + bgmp);
 
         /* log current position */
-        logger.log(w);
+        if (logger.log(w)) break;
     }
 
     return w;

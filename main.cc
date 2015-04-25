@@ -18,17 +18,49 @@ int main(int argc, char* argv[])
     double max_epochs = 1.0;
     double n_logs_per_epoch = 10.0;
     double alpha = 1.0;
+    double tol = 1e-9;
+    double opt_allowed_time = -1;
 
     try {
         /* prepare parser */
         TCLAP::CmdLine cmd("Run a numerical optimiser for training logistic regression.", ' ', "0.1");
 
         /* specify all options */
-        TCLAP::ValueArg<std::string> arg_method("", "method", "Optimisation method (SGD, SAG, SO2)", true, method, "string");
-        TCLAP::ValueArg<std::string> arg_dataset("", "dataset", "Dataset (a9a, mushrooms, w8a, covtype, quantum, alpha)", true, dataset, "string");
-        TCLAP::ValueArg<double> arg_max_epochs("", "max_epochs", "Maximum number of epochs (default: 1.0)", false, max_epochs, "double");
-        TCLAP::ValueArg<double> arg_n_logs_per_epoch("", "n_logs_per_epoch", "Number of requested logs per epoch (default: 10.0)", false, n_logs_per_epoch, "double");
-        TCLAP::ValueArg<double> arg_alpha("", "alpha", "Learning rate for SGD (default: 1.0)", false, alpha, "double");
+        TCLAP::ValueArg<std::string> arg_method(
+            "", "method",
+            "Optimisation method (SGD, SAG, SO2)",
+            true, method, "string"
+        );
+        TCLAP::ValueArg<std::string> arg_dataset(
+            "", "dataset",
+            "Dataset (a9a, mushrooms, w8a, covtype, quantum, alpha)",
+            true, dataset, "string"
+        );
+        TCLAP::ValueArg<double> arg_max_epochs(
+            "", "max_epochs",
+            "Maximum number of epochs (default: 1.0)",
+            false, max_epochs, "double"
+        );
+        TCLAP::ValueArg<double> arg_n_logs_per_epoch(
+            "", "n_logs_per_epoch",
+            "Number of requested logs per epoch (default: 10.0)",
+            false, n_logs_per_epoch, "double"
+        );
+        TCLAP::ValueArg<double> arg_alpha(
+            "", "alpha",
+            "Learning rate for SGD (default: 1.0)",
+            false, alpha, "double"
+        );
+        TCLAP::ValueArg<double> arg_tol(
+            "", "tol",
+            "Gradient norm tolerance (default: 1e-9)",
+            false, tol, "double"
+        );
+        TCLAP::ValueArg<double> arg_opt_allowed_time(
+            "", "opt_allowed_time",
+            "Maximal amount of time for which the optimiser is allowed to work; set -1 for no limit (default: -1)",
+            false, opt_allowed_time, "double"
+        );
 
         /* add options to parser */
         cmd.add(arg_method);
@@ -36,6 +68,8 @@ int main(int argc, char* argv[])
         cmd.add(arg_max_epochs);
         cmd.add(arg_n_logs_per_epoch);
         cmd.add(arg_alpha);
+        cmd.add(arg_tol);
+        cmd.add(arg_opt_allowed_time);
 
         /* parse command-line string */
         cmd.parse(argc, argv);
@@ -46,6 +80,8 @@ int main(int argc, char* argv[])
         max_epochs = arg_max_epochs.getValue();
         n_logs_per_epoch = arg_n_logs_per_epoch.getValue();
         alpha = arg_alpha.getValue();
+        tol = arg_tol.getValue();
+        opt_allowed_time = arg_opt_allowed_time.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
@@ -91,7 +127,7 @@ int main(int argc, char* argv[])
     /* =============================== Run optimiser ======================================= */
 
     LogRegOracle func(Z, lambda); // prepare oracle
-    Logger logger(func, n_logs_per_epoch); // prepare logger
+    Logger logger(func, n_logs_per_epoch, tol, opt_allowed_time); // prepare logger
 
     /* run chosen method */
     if (method == "SAG") {
