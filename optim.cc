@@ -114,6 +114,7 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
     Eigen::VectorXd g = Eigen::VectorXd::Zero(D); // average gradient g = 1/N sum_i nabla f_i(v_i)
     Eigen::VectorXd p = Eigen::VectorXd::Zero(D); // vector p = 1/N sum_i nabla^2 f_i(v_i) v_i
+    Eigen::VectorXd bgmp = Eigen::VectorXd::Zero(D); // vector bgmp = B * (g - p)
 
     Eigen::MatrixXd B = (1.0 / lambda) * Eigen::MatrixXd::Identity(D, D); // inverse average hessian B = (1/N sum_i nabla^2 f_i(v_i))^{-1}
 
@@ -148,20 +149,20 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
         /* update B using Sherman-Morrison-Woodbury formula (rank-1 update) */
         double delta_phi_double_prime = phi_double_prime_new - phi_double_prime(i);
-        double coef = (1.0 / N) * delta_phi_double_prime;
         Eigen::VectorXd bzi = B * zi;
-        B.noalias() -= (coef / (1.0 + coef * zi.dot(bzi))) * bzi * bzi.transpose();
+        double coef = delta_phi_double_prime / (N + delta_phi_double_prime * zi.dot(bzi));
+        B.noalias() -= coef * bzi * bzi.transpose();
+
+        /* update bgmp: bgmp += [1/N (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi' (g_new - p_new)] * bzi */
+        bgmp += ((1.0 / N) * (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi.dot(g - p)) * bzi;
 
         /* update model */
         mu(i) = mu_new;
         phi_prime(i) = phi_prime_new;
         phi_double_prime(i) = phi_double_prime_new;
 
-        /* calculate direction d = -(w + B * (g - p)) */
-        Eigen::VectorXd d = -(w + B * (g - p));
-
-        /* make a step w += alpha * d */
-        w += alpha * d;
+        /* make a step w -= alpha * (w + B * (g - p)) */
+        w -= alpha * (w + bgmp);
 
         /* log current position */
         logger.log(w);
