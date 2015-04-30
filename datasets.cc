@@ -1,5 +1,6 @@
-#include <cmath>
 #include <fstream>
+#include <cmath>
+#include <cstring>
 
 #include "datasets.h"
 
@@ -53,6 +54,41 @@ void read_svmlight_file(const std::string& path, int N, int D, Eigen::MatrixXd& 
 
     /* we are done with the file, close it */
     file.close();
+}
+
+void read_pascal_file(const std::string& dat_filename, const std::string& lab_filename, int N, int D, Eigen::MatrixXd& X, Eigen::VectorXi& y)
+{
+    /* allocate memory */
+    X.resize(N, D);
+    y.resize(N);
+
+    /* read design matrix X */
+    int dummy;
+    FILE* file;
+    if (!(file = fopen(dat_filename.c_str(), "r"))) {
+        fprintf(stderr, "Could not load file '%s': %s\n", dat_filename.c_str(), strerror(errno));
+        throw 1;
+    }
+    for (int i = 0; i < N; ++i) {
+        if (i % 10000 == 0) {
+            fprintf(stderr, "Processed %d/%d samples (%.2f%%)\n", i, N, round(double(i) / N * 100));
+        }
+        for (int j = 0; j < D; ++j) {
+            dummy = fscanf(file, "%lf", &X(i, j));
+        }
+    }
+    fclose(file);
+    dummy += 0;
+
+    /* read labels y */
+    if (!(file = fopen(lab_filename.c_str(), "r"))) {
+        fprintf(stderr, "Could not load file '%s': %s\n", lab_filename.c_str(), strerror(errno));
+        throw 1;
+    }
+    for (int i = 0; i < N; ++i) {
+        dummy = fscanf(file, "%d", &y(i));
+    }
+    fclose(file);
 }
 
 /* ****************************************************************************************************************** */
@@ -121,33 +157,5 @@ void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_alpha(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
-    /* set up number of samples and features */
-    int N = 500000;
-    int D = 500;
-
-    /* allocate memory */
-    X.resize(N, D);
-    y.resize(N);
-
-    /* read design matrix X */
-    int dummy;
-    FILE* file;
-    file = fopen("datasets/alpha_train.dat", "r");
-    for (int i = 0; i < N; ++i) {
-        if (i % 10000 == 0) {
-            fprintf(stderr, "Processed %d/%d samples (%.2f%%)\n", i, N, round(double(i) / N * 100));
-        }
-        for (int j = 0; j < D; ++j) {
-            dummy = fscanf(file, "%lf", &X(i, j));
-        }
-    }
-    fclose(file);
-    dummy += 0;
-
-    /* read labels y */
-    file = fopen("datasets/alpha_train.lab", "r");
-    for (int i = 0; i < N; ++i) {
-        dummy = fscanf(file, "%d", &y(i));
-    }
-    fclose(file);
+    read_pascal_file("datasets/alpha_train.dat", "datasets/alpha_train.lab", 500000, 500, X, y);
 }
