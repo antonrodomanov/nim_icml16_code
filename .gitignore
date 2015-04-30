@@ -1,6 +1,12 @@
 *.o
 *.a
-datasets
 main
 LogRegOracle_test
 output
+
+datasets
+!datasets/a9a/README
+!datasets/w8a/README
+!datasets/covtype/README
+!datasets/alpha/README
+!datasets/mushrooms/README
