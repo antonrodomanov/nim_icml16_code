@@ -40,9 +40,9 @@ bool Logger::log(const Eigen::VectorXd& w)
 
         /* print calculated values */
         if (n_calls == 0) { /* print table header when it's the first call */
-            fprintf(stderr, "%9s %9s %9s %15s %15s\n", "epoch", "opt_elaps", "tot_elaps", "f", "norm_g");
+            fprintf(stderr, "%9s %9s %9s %25s %15s\n", "epoch", "opt_elaps", "tot_elaps", "f", "norm_g");
         }
-        fprintf(stderr, "%9.2f %9.2f %9.2f %15.6e %15.6e\n", epoch, opt_elaps, tot_elaps, f, norm_g);
+        fprintf(stderr, "%9.2f %9.2f %9.2f %25.16f %15.6e\n", epoch, opt_elaps, tot_elaps, f, norm_g);
 
         /* append calculated values to trace */
         trace_epoch.push_back(epoch);

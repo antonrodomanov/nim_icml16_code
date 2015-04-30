@@ -172,9 +172,9 @@ int main(int argc, char* argv[])
     }
 
     /* write trace into it */
-    fprintf(out_file, "%9s %9s %15s %15s\n", "epoch", "elapsed", "val", "norm_grad");
+    fprintf(out_file, "%9s %9s %25s %25s\n", "epoch", "elapsed", "val", "norm_grad");
     for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
-        fprintf(out_file, "%9.2f %9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
+        fprintf(out_file, "%9.2f %9.3f %25.16e %25.16e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
     }
 
     /* close output file */
