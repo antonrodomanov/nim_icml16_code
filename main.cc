@@ -5,7 +5,6 @@
 #include <tclap/CmdLine.h>
 #include <Eigen/Dense>
 
-#include "auxiliary.h"
 #include "datasets.h"
 #include "LogRegOracle.h"
 #include "optim.h"
