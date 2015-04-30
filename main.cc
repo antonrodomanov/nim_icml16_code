@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdio>
+#include <cstring>
 
 #include <tclap/CmdLine.h>
 #include <Eigen/Dense>
@@ -159,10 +160,25 @@ int main(int argc, char* argv[])
 
     /* =============================== Print the trace ======================================= */
 
-    printf("%9s %9s %15s %15s\n", "epoch", "elapsed", "val", "norm_grad");
-    for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
-        printf("%9.2f %9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
+    /* construct the name of the output file */
+    char out_filename[100];
+    sprintf(out_filename, "output/%s_%s.dat", dataset.c_str(), method.c_str());
+
+    /* creare output file */
+    FILE* out_file;
+    if (!(out_file = fopen(out_filename, "w"))) {
+        fprintf(stderr, "Could not open output file '%s': %s\n", out_filename, strerror(errno));
+        return 1;
     }
+
+    /* write trace into it */
+    fprintf(out_file, "%9s %9s %15s %15s\n", "epoch", "elapsed", "val", "norm_grad");
+    for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
+        fprintf(out_file, "%9.2f %9.2f %15.6e %15.6e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
+    }
+
+    /* close output file */
+    fclose(out_file);
 
     return 0;
 }
