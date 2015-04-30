@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
     std::string method = "";
     std::string dataset = "";
     double max_epochs = 1.0;
-    double n_logs_per_epoch = 10.0;
+    double n_logs_per_epoch = -1;
     double alpha = 1.0;
     double tol = 1e-9;
     double opt_allowed_time = -1;
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
         );
         TCLAP::ValueArg<double> arg_n_logs_per_epoch(
             "", "n_logs_per_epoch",
-            "Number of requested logs per epoch (default: 10.0)",
+            "Number of requested logs per epoch (default: 1.0 for SGD and SAG; 10.0 for SO2)",
             false, n_logs_per_epoch, "double"
         );
         TCLAP::ValueArg<double> arg_alpha(
@@ -80,6 +80,13 @@ int main(int argc, char* argv[])
         dataset = arg_dataset.getValue();
         max_epochs = arg_max_epochs.getValue();
         n_logs_per_epoch = arg_n_logs_per_epoch.getValue();
+        if (n_logs_per_epoch == -1) {
+            if (method == "SGD" || method == "SAG") {
+                n_logs_per_epoch = 1.0;
+            } else { // SO2
+                n_logs_per_epoch = 10.0;
+            }
+        }
         alpha = arg_alpha.getValue();
         tol = arg_tol.getValue();
         opt_allowed_time = arg_opt_allowed_time.getValue();
