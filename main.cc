@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
         fprintf(stderr, "Load alpha, might take a lot of time\n");
         load_alpha(Z, y);
     } else if (dataset == "epsilon") {
-        fprintf(stderr, "Load alpha. It may take a while.\n");
+        fprintf(stderr, "Load epsilon. It may take a while.\n");
         load_epsilon(Z, y);
     } else {
         fprintf(stderr, "Unknown dataset %s\n", dataset.c_str());
