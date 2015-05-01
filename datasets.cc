@@ -182,7 +182,7 @@ void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y)
     FILE* file;
     file = fopen("datasets/quantum/phy_train.dat", "r");
     for (int i = 0; i < N; ++i) {
-        /* read dummy "id" */
+        /* ignore "EXAMPLE_ID" */
         dummy = fscanf(file, "%d", &dummy);
 
         /* read label */
