@@ -23,6 +23,7 @@ datasets/alpha/*
 !datasets/alpha/README
 !datasets/alpha/download.sh
 !datasets/alpha/filelist.txt
+!datasets/alpha/normalise.py
 
 datasets/mushrooms/*
 !datasets/mushrooms/README
