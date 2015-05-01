@@ -6,21 +6,33 @@ output
 
 datasets/a9a/*
 !datasets/a9a/README
+!datasets/a9a/download.sh
+!datasets/a9a/filelist.txt
 
 datasets/w8a/*
 !datasets/w8a/README
+!datasets/w8a/download.sh
+!datasets/w8a/filelist.txt
 
 datasets/covtype/*
 !datasets/covtype/README
+!datasets/covtype/download.sh
+!datasets/covtype/filelist.txt
 
 datasets/alpha/*
 !datasets/alpha/README
+!datasets/alpha/download.sh
+!datasets/alpha/filelist.txt
 
 datasets/mushrooms/*
 !datasets/mushrooms/README
+!datasets/mushrooms/download.sh
+!datasets/mushrooms/filelist.txt
 
 datasets/epsilon/*
 !datasets/epsilon/README
+!datasets/epsilon/download.sh
+!datasets/epsilon/filelist.txt
 
 datasets/zeta/*
 !datasets/zeta/README
