@@ -183,3 +183,12 @@ void load_alpha(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
     read_pascal_file("datasets/alpha/alpha_train.dat", "datasets/alpha/alpha_train.lab", 500000, 500, X, y);
 }
+
+/* ****************************************************************************************************************** */
+/* ************************************************ epsilon ********************************************************* */
+/* ****************************************************************************************************************** */
+
+void load_epsilon(Eigen::MatrixXd& X, Eigen::VectorXi& y)
+{
+    read_pascal_file("datasets/epsilon/epsilon_train.dat", "datasets/epsilon/epsilon_train.lab", 500000, 2000, X, y);
+}
