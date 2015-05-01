@@ -1,0 +1,5 @@
+Source: http://osmot.cs.cornell.edu/kddcup/datasets.html.
+Files: bio_train.dat, bio_test.dat.
+(Need to register before you can download the files.)
+
+Preprocessing (normalise.py): scale features to range (-1, 1).

@@ -57,3 +57,7 @@ datasets/delta/*
 datasets/quantum/*
 !datasets/quantum/README
 !datasets/quantum/normalise.py
+
+datasets/protein/*
+!datasets/protein/README
+!datasets/protein/normalise.py
