@@ -1,0 +1,5 @@
+Source: http://osmot.cs.cornell.edu/kddcup/datasets.html.
+Files: phy_train.dat, phy_test.dat.
+(Need to register before you can download the files.)
+
+Preprocessing (normalise.py): Scale features to range (-1, 1).

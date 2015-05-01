@@ -147,32 +147,11 @@ void load_covtype(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
-    /* set up number of samples and features */
-    int N = 50000;
-    int D = 78;
+    /* read data */
+    read_pascal_file("datasets/quantum/phy_train_scaled.dat", "datasets/quantum/phy_train_scaled.lab", 50000, 78, X, y);
 
-    /* allocate memory */
-    X.resize(N, D);
-    y.resize(N);
-
-    /* read design matrix X */
-    int dummy;
-    FILE* file;
-    file = fopen("datasets/quantum/quantum.X.scaled.dat", "r");
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < D; ++j) {
-            dummy = fscanf(file, "%lf", &X(i, j));
-        }
-    }
-    fclose(file);
-    dummy += 0;
-
-    /* read labels y */
-    file = fopen("datasets/quantum/quantum.y.dat", "r");
-    for (int i = 0; i < N; ++i) {
-        dummy = fscanf(file, "%d", &y(i));
-    }
-    fclose(file);
+    /* transform y from {0, 1} to {-1, 1} */
+    y = 2 * y.array() - 1;
 }
 
 /* ****************************************************************************************************************** */

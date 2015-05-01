@@ -53,3 +53,7 @@ datasets/delta/*
 !datasets/delta/README
 !datasets/delta/download.sh
 !datasets/delta/filelist.txt
+
+datasets/quantum/*
+!datasets/quantum/README
+!datasets/quantum/normalise.py
