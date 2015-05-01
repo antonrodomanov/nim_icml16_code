@@ -261,7 +261,11 @@ void load_protein(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_alpha(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
+    /* read data */
     read_pascal_file("datasets/alpha/alpha_train.dat", "datasets/alpha/alpha_train.lab", 500000, 500, X, y);
+
+    /* scale features to [-1, 1] */
+    scale_features(X, -1, 1);
 }
 
 /* ****************************************************************************************************************** */
@@ -270,7 +274,11 @@ void load_alpha(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_epsilon(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
+    /* read data */
     read_pascal_file("datasets/epsilon/epsilon_train.dat", "datasets/epsilon/epsilon_train.lab", 500000, 2000, X, y);
+
+    /* scale features to [-1, 1] */
+    scale_features(X, -1, 1);
 }
 
 /* ****************************************************************************************************************** */
@@ -279,7 +287,11 @@ void load_epsilon(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_zeta(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
+    /* read data */
     read_pascal_file("datasets/zeta/zeta_train.dat", "datasets/zeta/zeta_train.lab", 500000, 2000, X, y);
+
+    /* scale features to [-1, 1] */
+    scale_features(X, -1, 1);
 }
 
 /* ****************************************************************************************************************** */
@@ -288,7 +300,11 @@ void load_zeta(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_beta(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
+    /* read data */
     read_pascal_file("datasets/beta/beta_train.dat", "datasets/beta/beta_train.lab", 500000, 500, X, y);
+
+    /* scale features to [-1, 1] */
+    scale_features(X, -1, 1);
 }
 
 /* ****************************************************************************************************************** */
@@ -297,7 +313,11 @@ void load_beta(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_gamma(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
+    /* read data */
     read_pascal_file("datasets/gamma/gamma_train.dat", "datasets/gamma/gamma_train.lab", 500000, 500, X, y);
+
+    /* scale features to [-1, 1] */
+    scale_features(X, -1, 1);
 }
 
 /* ****************************************************************************************************************** */
@@ -306,5 +326,9 @@ void load_gamma(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_delta(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
+    /* read data */
     read_pascal_file("datasets/delta/delta_train.dat", "datasets/delta/delta_train.lab", 500000, 500, X, y);
+
+    /* scale features to [-1, 1] */
+    scale_features(X, -1, 1);
 }
