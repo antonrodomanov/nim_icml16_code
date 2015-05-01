@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iostream>
 #include <cmath>
 #include <cstring>
 
@@ -95,6 +96,27 @@ void read_pascal_file(const std::string& dat_filename, const std::string& lab_fi
     fclose(file);
 }
 
+/* ================================================================================================================== */
+/* ========================================== scale_features ======================================================== */
+/* ================================================================================================================== */
+
+void scale_features(Eigen::MatrixXd& X, int min, int max)
+{
+    /* compute min and max for each feature */
+    Eigen::VectorXd features_min = X.colwise().minCoeff();
+    Eigen::VectorXd features_max = X.colwise().maxCoeff();
+
+    /* make sure no feature is constant */
+    assert(((features_max - features_min).array() > 0.0).all());
+
+    /* scale features to [0, 1] */
+    X.array().rowwise() -= features_min.array().transpose();
+    X.array().rowwise() /= (features_max - features_min).array().transpose();
+
+    /* scale features to [min, max] */
+    X = X.array() * (max - min) - min;
+}
+
 /* ****************************************************************************************************************** */
 /* ********************************************** mushrooms ********************************************************* */
 /* ****************************************************************************************************************** */
@@ -147,8 +169,47 @@ void load_covtype(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
+    /* set up number of samples and features */
+    int N = 50000;
+    int D = 65;
+
+    /* allocate memory */
+    X.resize(N, D);
+    y.resize(N);
+
     /* read data */
-    read_pascal_file("datasets/quantum/phy_train_scaled.dat", "datasets/quantum/phy_train_scaled.lab", 50000, 78, X, y);
+    int dummy;
+    FILE* file;
+    file = fopen("datasets/quantum/phy_train.dat", "r");
+    for (int i = 0; i < N; ++i) {
+        /* read dummy "id" */
+        dummy = fscanf(file, "%d", &dummy);
+
+        /* read label */
+        dummy = fscanf(file, "%d", &y(i));
+
+        /* read features */
+        double value;
+        int j = 0;
+        for (int j1 = 0; j1 < 78; ++j1) {
+            /* read a number */
+            dummy = fscanf(file, "%lf", &value);
+
+            /* don't include the following features (see the corresponding README) */
+            if (j1 >= 19 && j1 <= 21) continue;
+            if (j1 >= 43 && j1 <= 45) continue;
+            if (j1 == 28 || j1 == 54) continue;
+            if (j1 >= 46 && j1 <= 50) continue;
+
+            /* include the rest */
+            X(i, j) = value;
+            ++j;
+        }
+    }
+    fclose(file);
+
+    /* scale features to [-1, 1] */
+    scale_features(X, -1, 1);
 
     /* transform y from {0, 1} to {-1, 1} */
     y = 2 * y.array() - 1;
