@@ -119,6 +119,9 @@ int main(int argc, char* argv[])
     } else if (dataset == "epsilon") {
         fprintf(stderr, "Load epsilon. It may take a while.\n");
         load_epsilon(Z, y);
+    } else if (dataset == "zeta") {
+        fprintf(stderr, "Load zeta. It may take a while.\n");
+        load_zeta(Z, y);
     } else {
         fprintf(stderr, "Unknown dataset %s\n", dataset.c_str());
         return 1;

@@ -21,3 +21,8 @@ datasets/mushrooms/*
 
 datasets/epsilon/*
 !datasets/epsilon/README
+
+datasets/zeta/*
+!datasets/zeta/README
+!datasets/zeta/download.sh
+!datasets/zeta/filelist.txt

@@ -10,5 +10,6 @@ void load_covtype(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_alpha(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_epsilon(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_zeta(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 
 #endif

@@ -192,3 +192,12 @@ void load_epsilon(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
     read_pascal_file("datasets/epsilon/epsilon_train.dat", "datasets/epsilon/epsilon_train.lab", 500000, 2000, X, y);
 }
+
+/* ****************************************************************************************************************** */
+/* ************************************************** zeta ********************************************************** */
+/* ****************************************************************************************************************** */
+
+void load_zeta(Eigen::MatrixXd& X, Eigen::VectorXi& y)
+{
+    read_pascal_file("datasets/zeta/zeta_train.dat", "datasets/zeta/zeta_train.lab", 500000, 2000, X, y);
+}
