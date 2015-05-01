@@ -11,5 +11,8 @@ void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_alpha(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_epsilon(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_zeta(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_beta(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_gamma(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_delta(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 
 #endif
