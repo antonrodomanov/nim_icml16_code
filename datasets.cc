@@ -114,7 +114,7 @@ void scale_features(Eigen::MatrixXd& X, int min, int max)
     X.array().rowwise() /= (features_max - features_min).array().transpose();
 
     /* scale features to [min, max] */
-    X = X.array() * (max - min) - min;
+    X = X.array() * (max - min) + min;
 }
 
 /* ****************************************************************************************************************** */
@@ -221,8 +221,35 @@ void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
 void load_protein(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
+    /* set up number of samples and features */
+    int N = 145751;
+    int D = 74;
+
+    /* allocate memory */
+    X.resize(N, D);
+    y.resize(N);
+
     /* read data */
-    read_pascal_file("datasets/protein/bio_train_scaled.dat", "datasets/protein/bio_train_scaled.lab", 145751, 74, X, y);
+    int dummy;
+    FILE* file;
+    file = fopen("datasets/protein/bio_train.dat", "r");
+    for (int i = 0; i < N; ++i) {
+        /* ignore "BLOCK_ID" and "EXAMPLE_ID" */
+        dummy = fscanf(file, "%d", &dummy);
+        dummy = fscanf(file, "%d", &dummy);
+
+        /* read label */
+        dummy = fscanf(file, "%d", &y(i));
+
+        /* read features */
+        for (int j = 0; j < D; ++j) {
+            dummy = fscanf(file, "%lf", &X(i, j));
+        }
+    }
+    fclose(file);
+
+    /* scale features to [-1, 1] */
+    scale_features(X, -1, 1);
 
     /* transform y from {0, 1} to {-1, 1} */
     y = 2 * y.array() - 1;
