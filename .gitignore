@@ -19,6 +19,11 @@ datasets/covtype/*
 !datasets/covtype/download.sh
 !datasets/covtype/filelist.txt
 
+datasets/gisette/*
+!datasets/gisette/README
+!datasets/gisette/download.sh
+!datasets/gisette/filelist.txt
+
 datasets/alpha/*
 !datasets/alpha/README
 !datasets/alpha/download.sh

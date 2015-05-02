@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <cmath>
 #include <cstring>
 
@@ -61,10 +62,17 @@ void read_svmlight_file(const std::string& path, int N, int D, Eigen::MatrixXd& 
 /* ========================================= read_pascal_file ======================================================= */
 /* ================================================================================================================== */
 
-void read_pascal_file(const std::string& dat_filename, const std::string& lab_filename, int N, int D, Eigen::MatrixXd& X, Eigen::VectorXi& y)
+void read_pascal_file(const std::string& dat_filename, const std::string& lab_filename, int N, int D, Eigen::MatrixXd& X, Eigen::VectorXi& y,
+    std::set<int> ignore_cols = std::set<int>())
 {
+    /* determine the actual number of features */
+    int D_actual = D;
+    if (!ignore_cols.empty()) { /* ignore the features in `ignore_cols` */
+        D_actual -= ignore_cols.size();
+    }
+
     /* allocate memory */
-    X.resize(N, D);
+    X.resize(N, D_actual);
     y.resize(N);
 
     /* read design matrix X */
@@ -74,12 +82,26 @@ void read_pascal_file(const std::string& dat_filename, const std::string& lab_fi
         fprintf(stderr, "Could not load file '%s': %s\n", dat_filename.c_str(), strerror(errno));
         throw 1;
     }
+    int how_often = round(0.05 * N); // how often print the progress
     for (int i = 0; i < N; ++i) {
-        if (i % 10000 == 0) {
+        /* display current progress */
+        if (i % how_often == 0) {
             fprintf(stderr, "Processed %d/%d samples (%.2f%%)\n", i, N, round(double(i) / N * 100));
         }
-        for (int j = 0; j < D; ++j) {
-            dummy = fscanf(file, "%lf", &X(i, j));
+
+        /* read features */
+        double value;
+        int j = 0;
+        for (int j1 = 0; j1 < D; ++j1) {
+            /* read feature value */
+            dummy = fscanf(file, "%lf", &value);
+
+            /* ignore this value if requested */
+            if (ignore_cols.count(j1)) continue;
+
+            /* otherwise, save it */
+            X(i, j) = value;
+            ++j;
         }
     }
     fclose(file);
@@ -161,6 +183,28 @@ void load_covtype(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
     /* transform y from {1, 2} to {-1, 1} */
     y = 2 * (y.array() - 1) - 1;
+}
+
+/* ****************************************************************************************************************** */
+/* *********************************************** gisette ********************************************************** */
+/* ****************************************************************************************************************** */
+
+void load_gisette(Eigen::MatrixXd& X, Eigen::VectorXi& y)
+{
+    /* ignore the following features (see the corresponding README) */
+    std::set<int> ignore_features = {
+        111, 119, 196, 421, 479, 793, 876, 1037, 1040, 1179, 1267,
+        1639, 1736, 1792, 1835, 1904, 2022, 2086, 2198, 2248, 2348,
+        2585, 2604, 2686, 2691, 2811, 2901, 2909, 2952, 3007, 3026,
+        3157, 3193, 3476, 3556, 3631, 3706, 3745, 3864, 4066, 4100,
+        4255, 4388, 4872, 4964
+    };
+
+    /* read data */
+    read_pascal_file("datasets/gisette/gisette_train.data", "datasets/gisette/gisette_train.labels", 6000, 5000, X, y, ignore_features);
+
+    /* scale features to [-1, 1] */
+    scale_features(X, -1, 1);
 }
 
 /* ****************************************************************************************************************** */
