@@ -25,9 +25,11 @@ void read_svmlight_file(const std::string& path, int N, int D, Eigen::MatrixXd& 
 
     /* loop over samples */
     std::string line;
-    int sample_idx = 0;
     int how_often = round(0.05 * N); // how often print the progress
-    while (std::getline(file, line)) {
+    for (int sample_idx = 0; sample_idx < N; ++sample_idx) {
+        /* read current line */
+        std::getline(file, line);
+
         /* display current progress */
         if (sample_idx % how_often == 0) {
             fprintf(stderr, "Processed %d/%d samples (%.2f%%)\n", sample_idx, N, round(double(sample_idx) / N * 100));
@@ -55,9 +57,6 @@ void read_svmlight_file(const std::string& path, int N, int D, Eigen::MatrixXd& 
             /* write this feature into the design matrix */
             X(sample_idx, feature_idx) = feature_value;
         }
-
-        /* go to next sample */
-        ++sample_idx;
     }
 
     /* we are done with the file, close it */
@@ -225,6 +224,22 @@ void load_SUSY(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 
     /* scale features to [-1, 1] */
     scale_features(X, -1, 1);
+}
+
+/* ****************************************************************************************************************** */
+/* ************************************************ mnist8m ********************************************************* */
+/* ****************************************************************************************************************** */
+
+void load_mnist8m(Eigen::MatrixXd& X, Eigen::VectorXi& y)
+{
+    /* read data */
+    read_svmlight_file("datasets/mnist8m/mnist8m.scale", 8100000, 784, X, y);
+
+    /* transform into a binary problem: 0,1,2,3,4 -> -1; 5,6,7,8 -> +1 */
+    y = (y.array() == 0 || y.array() == 1 || y.array() == 2 || y.array() == 3 || y.array() == 4).select(-1, y);
+    y = (y.array() == 5 || y.array() == 6 || y.array() == 7 || y.array() == 8 || y.array() == 9).select(+1, y);
+
+    assert((y.array() != -1 && y.array() != 1).sum() == 0);
 }
 
 /* ****************************************************************************************************************** */

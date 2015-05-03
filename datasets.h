@@ -10,6 +10,7 @@ void load_covtype(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_cod_rna(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_ijcnn1(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_SUSY(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_mnist8m(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_gisette(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_quantum(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_protein(Eigen::MatrixXd& X, Eigen::VectorXi& y);

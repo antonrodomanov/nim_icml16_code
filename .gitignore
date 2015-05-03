@@ -35,6 +35,11 @@ datasets/SUSY/*
 !datasets/SUSY/filelist.txt
 !datasets/SUSY/split.sh
 
+datasets/mnist8m/*
+!datasets/mnist8m/README
+!datasets/mnist8m/download.sh
+!datasets/mnist8m/filelist.txt
+
 datasets/gisette/*
 !datasets/gisette/README
 !datasets/gisette/download.sh
