@@ -81,6 +81,12 @@ datasets/delta/*
 !datasets/delta/download.sh
 !datasets/delta/filelist.txt
 
+datasets/fd/*
+!datasets/fd/README
+!datasets/fd/download.sh
+!datasets/fd/filelist.txt
+!datasets/fd/convert.py
+
 datasets/quantum/*
 !datasets/quantum/README
 

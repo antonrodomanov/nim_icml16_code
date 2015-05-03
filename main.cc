@@ -33,7 +33,8 @@ int main(int argc, char* argv[])
         );
         TCLAP::ValueArg<std::string> arg_dataset(
             "", "dataset",
-            "Dataset (a9a, mushrooms, w8a, covtype, cod-rna, ijcnn1, gisette, quantum, protein, alpha, beta, gamma, delta, epsilon, zeta)",
+            "Dataset (a9a, mushrooms, w8a, covtype, cod-rna, ijcnn1, gisette, quantum, protein, alpha, beta, "
+            "gamma, delta, epsilon, zeta, fd)",
             true, dataset, "string"
         );
         TCLAP::ValueArg<double> arg_max_epochs(
@@ -149,6 +150,9 @@ int main(int argc, char* argv[])
     } else if (dataset == "delta") {
         fprintf(stderr, "Load delta. It may take a while.\n");
         load_delta(Z, y);
+    } else if (dataset == "fd") {
+        fprintf(stderr, "Load fd. It may take a while.\n");
+        load_fd(Z, y);
     } else {
         fprintf(stderr, "Unknown dataset %s\n", dataset.c_str());
         return 1;
