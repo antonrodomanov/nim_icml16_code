@@ -1,0 +1,8 @@
+Source: http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#SUSY.
+
+The original file was split into two pieces: train (first 4,000,000 rows) and test (the rest 1,000,000 rows). Run "split.sh" to obtain this splitting.
+
+Preprocessing: scale each feature to [-1, 1].
+
+Samples: 4,000,000 / 1,000,000 (testing).
+Features: 18.

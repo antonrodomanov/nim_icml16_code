@@ -29,6 +29,12 @@ datasets/ijcnn1/*
 !datasets/ijcnn1/download.sh
 !datasets/ijcnn1/filelist.txt
 
+datasets/SUSY/*
+!datasets/SUSY/README
+!datasets/SUSY/download.sh
+!datasets/SUSY/filelist.txt
+!datasets/SUSY/split.sh
+
 datasets/gisette/*
 !datasets/gisette/README
 !datasets/gisette/download.sh

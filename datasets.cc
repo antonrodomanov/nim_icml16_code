@@ -26,7 +26,13 @@ void read_svmlight_file(const std::string& path, int N, int D, Eigen::MatrixXd& 
     /* loop over samples */
     std::string line;
     int sample_idx = 0;
+    int how_often = round(0.05 * N); // how often print the progress
     while (std::getline(file, line)) {
+        /* display current progress */
+        if (sample_idx % how_often == 0) {
+            fprintf(stderr, "Processed %d/%d samples (%.2f%%)\n", sample_idx, N, round(double(sample_idx) / N * 100));
+        }
+
         assert(sample_idx < N); // make sure the passed number of samples is correct
 
         int label, feature_idx;
@@ -206,6 +212,19 @@ void load_ijcnn1(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
     /* read data */
     read_svmlight_file("datasets/ijcnn1/ijcnn1", 49990, 22, X, y);
+}
+
+/* ****************************************************************************************************************** */
+/* ************************************************* SUSY ********************************************************** */
+/* ****************************************************************************************************************** */
+
+void load_SUSY(Eigen::MatrixXd& X, Eigen::VectorXi& y)
+{
+    /* read data */
+    read_svmlight_file("datasets/SUSY/SUSY", 4000000, 18, X, y);
+
+    /* scale features to [-1, 1] */
+    scale_features(X, -1, 1);
 }
 
 /* ****************************************************************************************************************** */

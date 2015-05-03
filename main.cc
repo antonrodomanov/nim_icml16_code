@@ -116,6 +116,9 @@ int main(int argc, char* argv[])
     } else if (dataset == "ijcnn1") {
         fprintf(stderr, "Load ijcnn1\n");
         load_ijcnn1(Z, y);
+    } else if (dataset == "SUSY") {
+        fprintf(stderr, "Load SUSY\n");
+        load_SUSY(Z, y);
     } else if (dataset == "gisette") {
         fprintf(stderr, "Load gisette. It may take some time.\n");
         load_gisette(Z, y);
