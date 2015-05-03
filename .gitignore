@@ -87,6 +87,12 @@ datasets/fd/*
 !datasets/fd/filelist.txt
 !datasets/fd/convert.py
 
+datasets/ocr/*
+!datasets/ocr/README
+!datasets/ocr/download.sh
+!datasets/ocr/filelist.txt
+!datasets/ocr/convert.py
+
 datasets/quantum/*
 !datasets/quantum/README
 

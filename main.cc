@@ -153,6 +153,9 @@ int main(int argc, char* argv[])
     } else if (dataset == "fd") {
         fprintf(stderr, "Load fd. It may take a while.\n");
         load_fd(Z, y);
+    } else if (dataset == "ocr") {
+        fprintf(stderr, "Load ocr. It may take a while.\n");
+        load_ocr(Z, y);
     } else {
         fprintf(stderr, "Unknown dataset %s\n", dataset.c_str());
         return 1;
