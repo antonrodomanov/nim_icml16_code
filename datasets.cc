@@ -220,7 +220,7 @@ void load_ijcnn1(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 void load_SUSY(Eigen::MatrixXd& X, Eigen::VectorXi& y)
 {
     /* read data */
-    read_svmlight_file("datasets/SUSY/SUSY", 4000000, 18, X, y);
+    read_svmlight_file("datasets/SUSY/SUSY", 5000000, 18, X, y);
 
     /* scale features to [-1, 1] */
     scale_features(X, -1, 1);
