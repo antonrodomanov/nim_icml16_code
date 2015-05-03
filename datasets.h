@@ -22,5 +22,6 @@ void load_gamma(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_delta(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_fd(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 void load_ocr(Eigen::MatrixXd& X, Eigen::VectorXi& y);
+void load_dna(Eigen::MatrixXd& X, Eigen::VectorXi& y);
 
 #endif

@@ -93,6 +93,12 @@ datasets/ocr/*
 !datasets/ocr/filelist.txt
 !datasets/ocr/convert.py
 
+datasets/dna/*
+!datasets/dna/README
+!datasets/dna/download.sh
+!datasets/dna/filelist.txt
+!datasets/dna/convert.py
+
 datasets/quantum/*
 !datasets/quantum/README
 
