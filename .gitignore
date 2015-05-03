@@ -19,6 +19,11 @@ datasets/covtype/*
 !datasets/covtype/download.sh
 !datasets/covtype/filelist.txt
 
+datasets/cod-rna/*
+!datasets/cod-rna/README
+!datasets/cod-rna/download.sh
+!datasets/cod-rna/filelist.txt
+
 datasets/gisette/*
 !datasets/gisette/README
 !datasets/gisette/download.sh
