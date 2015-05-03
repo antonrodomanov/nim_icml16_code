@@ -24,6 +24,11 @@ datasets/cod-rna/*
 !datasets/cod-rna/download.sh
 !datasets/cod-rna/filelist.txt
 
+datasets/ijcnn1/*
+!datasets/ijcnn1/README
+!datasets/ijcnn1/download.sh
+!datasets/ijcnn1/filelist.txt
+
 datasets/gisette/*
 !datasets/gisette/README
 !datasets/gisette/download.sh
