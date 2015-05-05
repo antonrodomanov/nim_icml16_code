@@ -30,6 +30,26 @@ Eigen::VectorXd LogRegOracle::full_grad(const Eigen::VectorXd& w) const
     return (1.0 / Z.rows()) * Z.transpose() * (Z * w).unaryExpr(std::ptr_fun(sigm)) + lambda * w;
 }
 
+Eigen::MatrixXd LogRegOracle::full_hess(const Eigen::VectorXd& w) const
+{
+    /* calcuate the diagonal part */
+    Eigen::VectorXd sigma = (Z * w).unaryExpr(std::ptr_fun(sigm));
+    Eigen::VectorXd s = sigma.array() * (1.0 - sigma.array());
+
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(w.size(), w.size());
+    /* since we don't want to copy the entire Z matrix, the only way to compute Z.T*S*Z
+       without allocating new memory is to loop over all the samples */
+    for (int i = 0; i < n_samples(); ++i) {
+        H.selfadjointView<Eigen::Upper>().rankUpdate(Z.row(i).transpose(), s(i));
+    }
+    H /= Z.rows(); // normalise by the number of samples
+
+    /* don't forget the regulariser */
+    H += lambda * Eigen::MatrixXd::Identity(w.size(), w.size());
+
+    return H;
+}
+
 double LogRegOracle::phi_prime(double mu) const
 {
     return sigm(mu);

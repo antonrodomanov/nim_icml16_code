@@ -132,3 +132,25 @@ TEST(FullGradTest, Basic) {
     EXPECT_NEAR(g(0), 0.07483417, 1e-5);
     EXPECT_NEAR(g(1), -0.04208662, 1e-5);
 }
+
+TEST(FullHessTest, Basic) {
+    Eigen::MatrixXd Z;
+    Eigen::VectorXd w;
+    double lambda;
+
+    Z.resize(3, 2);
+    Z << 0.1, -0.01,
+         -0.01, -0.1,
+         0.3, 0.1;
+    w.resize(2);
+    w << 0.1, -0.4;
+    lambda = 0.1;
+
+    LogRegOracle func(Z, lambda);
+
+    Eigen::MatrixXd H = func.full_hess(w);
+    /* because the Hessian is symmetric, require only the upper triangular part be correct */
+    EXPECT_NEAR(H(0,0), 0.10834144, 1e-5);
+    EXPECT_NEAR(H(0,1), 0.00249991, 1e-5);
+    EXPECT_NEAR(H(1,1), 0.10167466, 1e-5);
+}
