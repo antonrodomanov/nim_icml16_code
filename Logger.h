@@ -27,9 +27,9 @@ public:
 
 private:
     const LogRegOracle& func; // the function being traced
-    const int how_often; // frequency of logging, in number of calls
+    const size_t how_often; // frequency of logging, in number of calls
 
-    int n_calls; // number of times this logger has been called
+    size_t n_calls; // number of times this logger has been called
     clock_t t_start; // time of creation of this logger
     double mainten_time; // total time spent on maintenance tasks
 
