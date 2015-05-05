@@ -16,9 +16,13 @@ Logger::Logger(const LogRegOracle& func, double n_logs_per_epoch, double tol, do
     opt_allowed_time(opt_allowed_time)
 {}
 
-bool Logger::log(const Eigen::VectorXd& w)
+bool Logger::log(const Eigen::VectorXd& w, size_t n_full_calls)
 {
     bool terminate = false; // don't terminate unless needed
+
+    if (n_full_calls > 0) { /* this is a non-incremental optimiser, its each call equals one epoch */
+        n_calls = n_full_calls * func.n_samples();
+    }
 
     if (n_calls % how_often == 0) { /* perform actual logging only every `how_often` calls */
         /* remember the time when the maintenance starts */

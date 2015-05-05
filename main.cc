@@ -80,13 +80,6 @@ int main(int argc, char* argv[])
         dataset = arg_dataset.getValue();
         max_epochs = arg_max_epochs.getValue();
         n_logs_per_epoch = arg_n_logs_per_epoch.getValue();
-        if (n_logs_per_epoch == -1) {
-            if (method == "SGD" || method == "SAG") {
-                n_logs_per_epoch = 1.0;
-            } else { // SO2
-                n_logs_per_epoch = 10.0;
-            }
-        }
         alpha = arg_alpha.getValue();
         tol = arg_tol.getValue();
         opt_allowed_time = arg_opt_allowed_time.getValue();
@@ -172,7 +165,21 @@ int main(int argc, char* argv[])
 
     double lambda = 1.0 / Z.rows(); // regularisation coefficient
     Eigen::VectorXd w0 = Eigen::VectorXd::Zero(Z.cols()); // starting point
-    size_t maxiter = max_epochs * size_t(Z.rows()); // maximum number of iteration
+    /* number of logs per epoch */
+    if (n_logs_per_epoch == -1) { // if not set up yet
+        if (method == "SO2") {
+            n_logs_per_epoch = 10.0;
+        } else {
+            n_logs_per_epoch = 1.0;
+        }
+    }
+    /* maximum number of iterations */
+    size_t maxiter;
+    if (method == "SGD" || method == "SAG" || method == "SO2") { // incremental methods
+        maxiter = max_epochs * size_t(Z.rows());
+    } else { // non-incremental methods, one iteration >= one epoch
+        maxiter = max_epochs;
+    }
 
     /* =============================== Run optimiser ======================================= */
 
@@ -209,9 +216,7 @@ int main(int argc, char* argv[])
         maxiter = max_epochs;
 
         /* run method */
-        newton(func, w0, maxiter);
-
-        return 0;
+        newton(func, logger, w0, maxiter);
     } else {
         fprintf(stderr, "Unknown method %s\n", method.c_str());
         return 1;

@@ -175,20 +175,23 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ************************************************** Newton ******************************************************** */
 /* ****************************************************************************************************************** */
 
-Eigen::VectorXd newton(const LogRegOracle& func, const Eigen::VectorXd& w0, size_t maxiter, double c1)
+Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double c1)
 {
     /* assign starting point */
     Eigen::VectorXd w = w0;
 
+    /* log initial position */
+    logger.log(w);
+
     /* initialisation */
+    size_t n_full_calls = 0;
+
     double f = func.full_val(w); // function value
     Eigen::VectorXd g = func.full_grad(w); // gradient
     Eigen::MatrixXd H = func.full_hess(w); // Hessian
+    ++n_full_calls;
 
     Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> llt; // for calculating Cholesky decomposition of H
-
-    /* log initial position */
-    //logger.log(w);
 
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
@@ -210,6 +213,7 @@ Eigen::VectorXd newton(const LogRegOracle& func, const Eigen::VectorXd& w0, size
             double f_new = func.full_val(w_new);
             g = func.full_grad(w_new);
             H = func.full_hess(w_new);
+            ++n_full_calls;
 
             /* check Armijo condition */
             if (f_new <= f + c1 * alpha * gtd) {
@@ -224,9 +228,8 @@ Eigen::VectorXd newton(const LogRegOracle& func, const Eigen::VectorXd& w0, size
         }
 
         /* log current position */
-        //if (logger.log(w)) break;
-
-        fprintf(stderr, "iter=%zu, alpha=%g, f=%g, norm_g=%g\n", iter, alpha, f, g.lpNorm<Eigen::Infinity>());
+        //fprintf(stderr, "iter=%zu, alpha=%g, f=%g, norm_g=%g\n", iter, alpha, f, g.lpNorm<Eigen::Infinity>());
+        if (logger.log(w, n_full_calls)) break;
     }
 
     return w;
