@@ -1,5 +1,6 @@
 #include <iostream>
 #include <random>
+#include <functional>
 
 #include "optim.h"
 #include "Logger.h"
@@ -233,4 +234,47 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
     }
 
     return w;
+}
+
+/* ****************************************************************************************************************** */
+/* ******************************************** Conjugate gradient ************************************************** */
+/* ****************************************************************************************************************** */
+
+Eigen::VectorXd cg(const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& matvec,
+                   const Eigen::VectorXd& b, const Eigen::VectorXd& x0, double tol)
+{
+    /* assign starting point */
+    Eigen::VectorXd x = x0;
+
+    /* initialisation */
+    size_t maxiter = b.size(); // maximum number of iteration (equals n by default)
+
+    Eigen::VectorXd r = matvec(x) - b; // residual
+    Eigen::VectorXd d = -r; // direction
+    double norm_r = r.lpNorm<Eigen::Infinity>(); // residual infinity-norm
+    double r2 = r.dot(r); // residual 2-norm squared
+
+    /* main loop */
+    size_t iter = 0;
+    while (iter < maxiter && norm_r > tol) {
+        /* compute matrix-vector product */
+        Eigen::VectorXd ad = matvec(d);
+
+        /* update current point and residual */
+        double alpha = r2 / (d.dot(ad));
+        x += alpha * d;
+        r += alpha * ad;
+
+        /* update direction */
+        double r2_new = r.dot(r);
+        double beta = r2_new / r2;
+        d = -r + beta * d;
+
+        /* prepare for next iteration */
+        ++iter;
+        r2 = r2_new;
+        norm_r = r.lpNorm<Eigen::Infinity>();
+    }
+
+    return x;
 }
