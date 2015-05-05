@@ -52,6 +52,15 @@ Eigen::MatrixXd LogRegOracle::full_hess(const Eigen::VectorXd& w) const
     return H;
 }
 
+Eigen::VectorXd LogRegOracle::hessvec(const Eigen::VectorXd& w, const Eigen::VectorXd& d) const
+{
+    /* calcuate the diagonal part */
+    Eigen::VectorXd sigma = (Z * w).unaryExpr(std::ptr_fun(sigm));
+    Eigen::VectorXd s = sigma.array() * (1.0 - sigma.array());
+
+    return (1.0 / Z.rows()) * Z.transpose() * (s.array() * (Z * d).array()).matrix() + lambda * d;
+}
+
 double LogRegOracle::phi_prime(double mu) const
 {
     return sigm(mu);

@@ -17,6 +17,8 @@ public:
     Eigen::VectorXd full_grad(const Eigen::VectorXd& w) const;
     Eigen::MatrixXd full_hess(const Eigen::VectorXd& w) const; // the elements will be stored in the **upper** triangular part
 
+    Eigen::VectorXd hessvec(const Eigen::VectorXd& w, const Eigen::VectorXd& d) const; // hessian-vector product H(w)*d
+
     double phi_prime(double mu) const;
     double phi_double_prime(double mu) const;
 
