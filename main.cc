@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
         /* specify all options */
         TCLAP::ValueArg<std::string> arg_method(
             "", "method",
-            "Optimisation method (SGD, SAG, SO2)",
+            "Optimisation method (SGD, SAG, SO2, newton)",
             true, method, "string"
         );
         TCLAP::ValueArg<std::string> arg_dataset(
@@ -202,6 +202,16 @@ int main(int argc, char* argv[])
 
         /* run method */
         SO2(func, logger, w0, maxiter);
+    } else if (method == "newton") {
+        /* print summary */
+        fprintf(stderr, "Use Newton's method\n");
+
+        maxiter = max_epochs;
+
+        /* run method */
+        newton(func, w0, maxiter);
+
+        return 0;
     } else {
         fprintf(stderr, "Unknown method %s\n", method.c_str());
         return 1;

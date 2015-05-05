@@ -170,3 +170,64 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
     return w;
 }
+
+/* ****************************************************************************************************************** */
+/* ************************************************** Newton ******************************************************** */
+/* ****************************************************************************************************************** */
+
+Eigen::VectorXd newton(const LogRegOracle& func, const Eigen::VectorXd& w0, size_t maxiter, double c1)
+{
+    /* assign starting point */
+    Eigen::VectorXd w = w0;
+
+    /* initialisation */
+    double f = func.full_val(w); // function value
+    Eigen::VectorXd g = func.full_grad(w); // gradient
+    Eigen::MatrixXd H = func.full_hess(w); // Hessian
+
+    Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> llt; // for calculating Cholesky decomposition of H
+
+    /* log initial position */
+    //logger.log(w);
+
+    /* main loop */
+    for (size_t iter = 0; iter < maxiter; ++iter) {
+        /* compute Cholesky decomposition H=L*L.T */
+        llt.compute(H);
+
+        /* calculate direction d = -H^{-1} g */
+        Eigen::VectorXd d = llt.solve(-g);
+
+        /* backtrack if needed */
+        double gtd = g.dot(d); // directional derivative
+        assert(gtd <= 0.0);
+        double alpha = 1.0; // initial step length
+        while (true) {
+            /* make a step w += alpha * d */
+            Eigen::VectorXd w_new = w + alpha * d;
+
+            /* call function at new point */
+            double f_new = func.full_val(w_new);
+            g = func.full_grad(w_new);
+            H = func.full_hess(w_new);
+
+            /* check Armijo condition */
+            if (f_new <= f + c1 * alpha * gtd) {
+                w = w_new;
+                f = f_new;
+                break;
+            }
+
+            /* if not satisfied, halve step length */
+            alpha /= 2;
+            fprintf(stderr, "backtrack (alpha=%g)...\n", alpha);
+        }
+
+        /* log current position */
+        //if (logger.log(w)) break;
+
+        fprintf(stderr, "iter=%zu, alpha=%g, f=%g, norm_g=%g\n", iter, alpha, f, g.lpNorm<Eigen::Infinity>());
+    }
+
+    return w;
+}
