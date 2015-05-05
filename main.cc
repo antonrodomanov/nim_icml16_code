@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 
     double lambda = 1.0 / Z.rows(); // regularisation coefficient
     Eigen::VectorXd w0 = Eigen::VectorXd::Zero(Z.cols()); // starting point
-    int maxiter = max_epochs * Z.rows(); // maximum number of iteration
+    size_t maxiter = max_epochs * size_t(Z.rows()); // maximum number of iteration
 
     /* =============================== Run optimiser ======================================= */
 
@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
 
     /* write trace into it */
     fprintf(out_file, "%9s %9s %25s %25s\n", "epoch", "elapsed", "val", "norm_grad");
-    for (int i = 0; i < int(logger.trace_epoch.size()); ++i) {
+    for (size_t i = 0; i < logger.trace_epoch.size(); ++i) {
         fprintf(out_file, "%9.2f %9.3f %25.16e %25.16e\n", logger.trace_epoch[i], logger.trace_elaps[i], logger.trace_val[i], logger.trace_norm_grad[i]);
     }
 

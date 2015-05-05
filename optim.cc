@@ -7,7 +7,7 @@
 /* ****************************************************************************************************************** */
 /* *************************************************** SGD ********************************************************** */
 /* ****************************************************************************************************************** */
-Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, int maxiter)
+Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, size_t maxiter)
 {
     /* prepare random number generator */
     std::random_device rd;
@@ -21,7 +21,7 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     logger.log(w);
 
     /* main loop */
-    for (int iter = 0; iter < maxiter; ++iter) {
+    for (size_t iter = 0; iter < maxiter; ++iter) {
         /* select random sample i */
         int i = dis(gen);
 
@@ -41,7 +41,7 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 /* *************************************************** SAG ********************************************************** */
 /* ****************************************************************************************************************** */
-Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, int maxiter)
+Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, size_t maxiter)
 {
     /* assign useful variables */
     const int N = func.n_samples();
@@ -66,7 +66,7 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     logger.log(w);
 
     /* main loop */
-    for (int iter = 0; iter < maxiter; ++iter) {
+    for (size_t iter = 0; iter < maxiter; ++iter) {
         /* select random sample i */
         int i = dis(gen);
 
@@ -96,7 +96,7 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 /* *************************************************** SO2 ********************************************************** */
 /* ****************************************************************************************************************** */
-Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, int maxiter)
+Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter)
 {
     /* assign useful variables */
     const int N = func.n_samples();
@@ -125,7 +125,7 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     logger.log(w);
 
     /* main loop */
-    for (int iter = 0; iter < maxiter; ++iter) {
+    for (size_t iter = 0; iter < maxiter; ++iter) {
         /* choose index; use cyclic order */
         i = (i + 1) % N;
 
