@@ -42,6 +42,8 @@ Eigen::MatrixXd LogRegOracle::full_hess(const Eigen::VectorXd& w) const
     for (int i = 0; i < n_samples(); ++i) {
         H.selfadjointView<Eigen::Upper>().rankUpdate(Z.row(i).transpose(), s(i));
     }
+    //Eigen::MatrixXd ZS = Z.array().colwise() * s.unaryExpr(std::ptr_fun(sqrt)).array();
+    //H.selfadjointView<Eigen::Upper>().rankUpdate(ZS.transpose());
     H /= Z.rows(); // normalise by the number of samples
 
     /* don't forget the regulariser */
