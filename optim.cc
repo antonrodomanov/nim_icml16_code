@@ -278,3 +278,74 @@ Eigen::VectorXd cg(const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
 
     return x;
 }
+
+/* ****************************************************************************************************************** */
+/* ******************************************* Hessian-free Newton ************************************************** */
+/* ****************************************************************************************************************** */
+
+Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double c1)
+{
+    /* assign starting point */
+    Eigen::VectorXd w = w0;
+
+    /* log initial position */
+    logger.log(w);
+
+    /* initialisation */
+    size_t n_full_calls = 0;
+
+    double f = func.full_val(w); // function value
+    Eigen::VectorXd g = func.full_grad(w); // gradient
+    ++n_full_calls;
+
+    Eigen::VectorXd d = Eigen::VectorXd::Zero(w.size());
+
+    /* main loop */
+    for (size_t iter = 0; iter < maxiter; ++iter) {
+        /* calculate direction d = -H^{-1} g approximately using CG */
+        double norm_g = g.lpNorm<Eigen::Infinity>();
+        double cg_tol = std::min(0.5, sqrt(norm_g)) * norm_g;
+        auto matvec = [&func, &w](const Eigen::VectorXd& d) { return func.hessvec(w, d); };
+        double gtd;
+        while (true) {
+            d = cg(matvec, -g, d, cg_tol);
+
+            /* ensure the returned `d` is a *descent* direction */
+            gtd = g.dot(d); // directional derivative
+            if (gtd <= 0.0) break;
+
+            /* otherwise, increase tolerance for CG and recompute `d` */
+            cg_tol /= 10.0;
+            fprintf(stderr, "not a descent direction, increase CG tolerance: cg_tol=%g\n", cg_tol);
+        }
+
+        /* backtrack if needed */
+        double alpha = 1.0; // initial step length
+        assert(gtd <= 0.0); // descent direction
+        while (true) {
+            /* make a step w += alpha * d */
+            Eigen::VectorXd w_new = w + alpha * d;
+
+            /* call function at new point */
+            double f_new = func.full_val(w_new);
+            g = func.full_grad(w_new);
+            ++n_full_calls;
+
+            /* check Armijo condition */
+            if (f_new <= f + c1 * alpha * gtd) {
+                w = w_new;
+                f = f_new;
+                break;
+            }
+
+            /* if not satisfied, halve step length */
+            alpha /= 2;
+            fprintf(stderr, "backtrack (alpha=%g)...\n", alpha);
+        }
+
+        /* log current position */
+        if (logger.log(w, n_full_calls)) break;
+    }
+
+    return w;
+}
