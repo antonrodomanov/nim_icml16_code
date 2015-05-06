@@ -352,3 +352,76 @@ Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
     return w;
 }
+
+/* ****************************************************************************************************************** */
+/* *************************************************** BFGS ********************************************************* */
+/* ****************************************************************************************************************** */
+
+Eigen::VectorXd BFGS(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double c1)
+{
+    /* assign starting point */
+    Eigen::VectorXd w = w0;
+
+    /* log initial position */
+    logger.log(w);
+
+    /* initialisation */
+    size_t n_full_calls = 0;
+
+    double f = func.full_val(w); // function value
+    Eigen::VectorXd g = func.full_grad(w); // gradient
+    ++n_full_calls;
+
+    Eigen::MatrixXd B = Eigen::MatrixXd::Identity(w.size(), w.size()); // BFGS approximation for the Hessian
+
+    /* auxiliary variables */
+    double f_new;
+    Eigen::VectorXd w_new, g_new;
+
+    /* main loop */
+    for (size_t iter = 0; iter < maxiter; ++iter) {
+        /* calculate direction d = -B*g */
+        Eigen::VectorXd d = B.selfadjointView<Eigen::Upper>() * (-g);
+
+        /* backtrack if needed */
+        double gtd = g.dot(d); // directional derivative
+        assert(gtd <= 0.0);
+        double alpha = 1.0; // initial step length
+        while (true) {
+            /* make a step w += alpha * d */
+            w_new = w + alpha * d;
+
+            /* call function at new point */
+            f_new = func.full_val(w_new);
+            g_new = func.full_grad(w_new);
+            ++n_full_calls;
+
+            /* check Armijo condition */
+            if (f_new <= f + c1 * alpha * gtd) {
+                break;
+            }
+
+            /* if not satisfied, halve step length */
+            alpha /= 2;
+            fprintf(stderr, "backtrack (alpha=%g)...\n", alpha);
+        }
+
+        /* update B */
+        Eigen::VectorXd y = g_new - g;
+        Eigen::VectorXd s = w_new - w;
+        assert(y.dot(s) > 0); // for strongly convex functions this should hold
+        double rho = 1.0 / y.dot(s);
+        Eigen::MatrixXd V = Eigen::MatrixXd::Identity(w.size(), w.size()) - rho * y * s.transpose();
+        B = V.transpose() * B * V + rho * s * s.transpose();
+
+        /* prepare for next iteration */
+        w = w_new;
+        f = f_new;
+        g = g_new;
+
+        /* log current position */
+        if (logger.log(w, n_full_calls)) break;
+    }
+
+    return w;
+}

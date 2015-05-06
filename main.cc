@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
         /* specify all options */
         TCLAP::ValueArg<std::string> arg_method(
             "", "method",
-            "Optimisation method (SGD, SAG, SO2, newton, HFN)",
+            "Optimisation method (SGD, SAG, SO2, newton, HFN, BFGS)",
             true, method, "string"
         );
         TCLAP::ValueArg<std::string> arg_dataset(
@@ -221,6 +221,12 @@ int main(int argc, char* argv[])
 
         /* run method */
         HFN(func, logger, w0, maxiter);
+    } else if (method == "BFGS") {
+        /* print summary */
+        fprintf(stderr, "Use method BFGS\n");
+
+        /* run method */
+        BFGS(func, logger, w0, maxiter);
     } else {
         fprintf(stderr, "Unknown method %s\n", method.c_str());
         return 1;
