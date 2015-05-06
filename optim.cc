@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
 #include <functional>
+#include <deque>
 
 #include "optim.h"
 #include "Logger.h"
@@ -417,6 +418,126 @@ Eigen::VectorXd BFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vect
         B.selfadjointView<Eigen::Upper>().rankUpdate(by, s, -rho); // symmetric rank-2 update
         double coef = rho * (rho * y.dot(by) + 1);
         B.selfadjointView<Eigen::Upper>().rankUpdate(s, coef); // symmetric rank-1 update
+
+        /* prepare for next iteration */
+        w = w_new;
+        f = f_new;
+        g = g_new;
+
+        /* log current position */
+        if (logger.log(w, n_full_calls)) break;
+    }
+
+    return w;
+}
+
+/* ****************************************************************************************************************** */
+/* ************************************************** L-BFGS ******************************************************** */
+/* ****************************************************************************************************************** */
+
+/* L-BFGS two-loop recursion */
+Eigen::VectorXd lbfgs_prod(std::deque<std::pair<Eigen::VectorXd, Eigen::VectorXd>> ys_hist, const Eigen::VectorXd& q, double gamma0)
+{
+    /* auxiliary variables */
+    size_t m = ys_hist.size();
+    Eigen::VectorXd y, s;
+    Eigen::VectorXd coefs1 = Eigen::VectorXd::Zero(m);
+    double rho, coef2;
+    int i;
+
+    /* assign initial vector */
+    Eigen::VectorXd z = q;
+
+    /* go back */
+    i = m - 1;
+    for (auto it = ys_hist.rbegin(); it != ys_hist.rend(); ++it) {
+        std::tie(y, s) = *it;
+        rho = 1.0 / y.dot(s);
+        coefs1(i) = rho * s.dot(z);
+        z -= coefs1(i) * y;
+        --i;
+    }
+
+    /* multiply by initial matrix `gamma0*I` */
+    z *= gamma0;
+
+    /* go forward */
+    i = 0;
+    for (auto it = ys_hist.begin(); it != ys_hist.end(); ++it) {
+        std::tie(y, s) = *it;
+        rho = 1.0 / y.dot(s);
+        coef2 = rho * y.dot(z);
+        z += (coefs1(i) - coef2) * s;
+        ++i;
+    }
+    return z;
+}
+
+Eigen::VectorXd LBFGS(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, size_t m, double c1)
+{
+    /* assign starting point */
+    Eigen::VectorXd w = w0;
+
+    /* log initial position */
+    logger.log(w);
+
+    /* initialisation */
+    size_t n_full_calls = 0;
+
+    double f = func.full_val(w); // function value
+    Eigen::VectorXd g = func.full_grad(w); // gradient
+    ++n_full_calls;
+
+    std::deque<std::pair<Eigen::VectorXd, Eigen::VectorXd>> ys_hist; // L-BFGS history
+    Eigen::VectorXd d; // direction
+
+    /* auxiliary variables */
+    double f_new;
+    Eigen::VectorXd w_new, g_new;
+
+    /* main loop */
+    for (size_t iter = 0; iter < maxiter; ++iter) {
+        /* calculate direction using L-BFGS two-loop recursion */
+        double norm_g = g.lpNorm<Eigen::Infinity>();
+        Eigen::VectorXd d;
+        if (iter == 0) { // first iteration
+            d = -g / norm_g;
+        } else { // can use L-BFGS history
+            Eigen::VectorXd y_old, s_old;
+            std::tie(y_old, s_old) = ys_hist.back();
+            double gamma0 = (y_old.dot(s_old)) / (y_old.dot(y_old)); // Barzilai-Borwein initialisation
+            d = lbfgs_prod(ys_hist, -g, gamma0);
+        }
+
+        /* backtrack if needed */
+        double gtd = g.dot(d); // directional derivative
+        assert(gtd <= 0.0);
+        double alpha = 1.0; // initial step length
+        while (true) {
+            /* make a step w += alpha * d */
+            w_new = w + alpha * d;
+
+            /* call function at new point */
+            f_new = func.full_val(w_new);
+            g_new = func.full_grad(w_new);
+            ++n_full_calls;
+
+            /* check Armijo condition */
+            if (f_new <= f + c1 * alpha * gtd || norm_g < 1e-6) { // always use unit step length when close to optimum
+                break;
+            }
+
+            /* if not satisfied, halve step length */
+            alpha /= 2;
+            fprintf(stderr, "backtrack (alpha=%g)...\n", alpha);
+        }
+
+        /* update L-BFGS history */
+        Eigen::VectorXd y = g_new - g;
+        Eigen::VectorXd s = w_new - w;
+        assert(y.dot(s) > 0); // this should hold for strongly convex functions
+        if (ys_hist.size() >= m) ys_hist.pop_front();
+        ys_hist.push_back(std::make_pair(y, s));
 
         /* prepare for next iteration */
         w = w_new;
