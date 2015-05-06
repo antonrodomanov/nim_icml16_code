@@ -31,7 +31,8 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         Eigen::VectorXd gi = func.single_grad(w, i);
 
         /* make a step w -= alpha * g_i */
-        w -= alpha * gi;
+        double epoch = double(iter) / func.n_samples();
+        w -= (alpha / (epoch + 1)) * gi;
 
         /* log current position */
         if (logger.log(w)) break;
