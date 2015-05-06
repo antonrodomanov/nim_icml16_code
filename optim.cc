@@ -406,13 +406,15 @@ Eigen::VectorXd BFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vect
             fprintf(stderr, "backtrack (alpha=%g)...\n", alpha);
         }
 
-        /* update B */
+        /* update B: B_new = (I - rho*y*s')'*B*(I - rho*y*s') + rho*s*s', where rho=1/(y'*s) */
         Eigen::VectorXd y = g_new - g;
         Eigen::VectorXd s = w_new - w;
-        assert(y.dot(s) > 0); // for strongly convex functions this should hold
+        assert(y.dot(s) > 0); // this should hold for strongly convex functions
         double rho = 1.0 / y.dot(s);
-        Eigen::MatrixXd V = Eigen::MatrixXd::Identity(w.size(), w.size()) - rho * y * s.transpose();
-        B = V.transpose() * B * V + rho * s * s.transpose();
+        Eigen::VectorXd by = B.selfadjointView<Eigen::Upper>() * y;
+        B.selfadjointView<Eigen::Upper>().rankUpdate(by, s, -rho); // symmetric rank-2 update
+        double coef = rho * (rho * y.dot(by) + 1);
+        B.selfadjointView<Eigen::Upper>().rankUpdate(s, coef); // symmetric rank-1 update
 
         /* prepare for next iteration */
         w = w_new;
