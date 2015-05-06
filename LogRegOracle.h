@@ -33,6 +33,8 @@ public:
     Eigen::VectorXd full_grad(const Eigen::VectorXd& w) const;
     Eigen::MatrixXd full_hess(const Eigen::VectorXd& w) const; // the elements will be stored in the **upper** triangular part
 
+    double full_val_grad(const Eigen::VectorXd& w, Eigen::VectorXd& g) const; // value and gradient at the same time
+
     LogRegHessVec hessvec() const; // return the corresponding LogRegHessVec object
 
     double phi_prime(double mu) const;

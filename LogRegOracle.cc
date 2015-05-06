@@ -52,6 +52,13 @@ Eigen::MatrixXd LogRegOracle::full_hess(const Eigen::VectorXd& w) const
     return H;
 }
 
+double LogRegOracle::full_val_grad(const Eigen::VectorXd& w, Eigen::VectorXd& g) const
+{
+    Eigen::VectorXd zw = Z * w;
+    g = (1.0 / Z.rows()) * Z.transpose() * zw.unaryExpr(std::ptr_fun(sigm)) + lambda * w;
+    return (1.0 / Z.rows()) * zw.unaryExpr(std::ptr_fun(logaddexp0)).sum() + (lambda / 2) * w.squaredNorm();
+}
+
 LogRegHessVec LogRegOracle::hessvec() const
 {
     return LogRegHessVec(Z, lambda);

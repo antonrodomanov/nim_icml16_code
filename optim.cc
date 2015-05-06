@@ -296,8 +296,9 @@ Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     /* initialisation */
     size_t n_full_calls = 0; // total number of function calls
 
-    double f = func.full_val(w); // function value
-    Eigen::VectorXd g = func.full_grad(w); // gradient
+    double f; // function value
+    Eigen::VectorXd g; // gradient
+    f = func.full_val_grad(w, g);
     ++n_full_calls;
 
     Eigen::VectorXd d = Eigen::VectorXd::Zero(w.size()); // direction
@@ -332,8 +333,7 @@ Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
             Eigen::VectorXd w_new = w + alpha * d;
 
             /* call function at new point */
-            double f_new = func.full_val(w_new);
-            g = func.full_grad(w_new);
+            double f_new = func.full_val_grad(w_new, g);
             ++n_full_calls;
 
             /* check Armijo condition */
@@ -370,8 +370,9 @@ Eigen::VectorXd BFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vect
     /* initialisation */
     size_t n_full_calls = 0;
 
-    double f = func.full_val(w); // function value
-    Eigen::VectorXd g = func.full_grad(w); // gradient
+    double f; // function value
+    Eigen::VectorXd g; // gradient
+    f = func.full_val_grad(w, g);
     ++n_full_calls;
 
     Eigen::MatrixXd B = Eigen::MatrixXd::Identity(w.size(), w.size()); // BFGS approximation for the Hessian
@@ -395,8 +396,7 @@ Eigen::VectorXd BFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vect
             w_new = w + alpha * d;
 
             /* call function at new point */
-            f_new = func.full_val(w_new);
-            g_new = func.full_grad(w_new);
+            f_new = func.full_val_grad(w_new, g_new);
             ++n_full_calls;
 
             /* check Armijo condition */
@@ -485,8 +485,9 @@ Eigen::VectorXd LBFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vec
     /* initialisation */
     size_t n_full_calls = 0;
 
-    double f = func.full_val(w); // function value
-    Eigen::VectorXd g = func.full_grad(w); // gradient
+    double f; // function value
+    Eigen::VectorXd g; // gradient
+    f = func.full_val_grad(w, g);
     ++n_full_calls;
 
     std::deque<std::pair<Eigen::VectorXd, Eigen::VectorXd>> ys_hist; // L-BFGS history
@@ -522,8 +523,7 @@ Eigen::VectorXd LBFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vec
             w_new = w + alpha * d;
 
             /* call function at new point */
-            f_new = func.full_val(w_new);
-            g_new = func.full_grad(w_new);
+            f_new = func.full_val_grad(w_new, g_new);
             ++n_full_calls;
 
             /* check Armijo condition */
