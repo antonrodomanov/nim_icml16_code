@@ -470,6 +470,7 @@ Eigen::VectorXd lbfgs_prod(std::deque<std::pair<Eigen::VectorXd, Eigen::VectorXd
         z += (coefs1(i) - coef2) * s;
         ++i;
     }
+
     return z;
 }
 
@@ -497,15 +498,18 @@ Eigen::VectorXd LBFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vec
 
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
-        /* calculate direction using L-BFGS two-loop recursion */
+        /* calculate direction */
         double norm_g = g.lpNorm<Eigen::Infinity>();
         Eigen::VectorXd d;
         if (iter == 0) { // first iteration
             d = -g / norm_g;
         } else { // can use L-BFGS history
+            /* calculate the coefficient for the initial matrix */
             Eigen::VectorXd y_old, s_old;
             std::tie(y_old, s_old) = ys_hist.back();
             double gamma0 = (y_old.dot(s_old)) / (y_old.dot(y_old)); // Barzilai-Borwein initialisation
+
+            /* use L-BFGS two-loop recursion */
             d = lbfgs_prod(ys_hist, -g, gamma0);
         }
 
