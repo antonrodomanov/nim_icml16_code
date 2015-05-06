@@ -155,7 +155,7 @@ TEST(FullHessTest, Basic) {
     EXPECT_NEAR(H(1,1), 0.10167466, 1e-5);
 }
 
-TEST(HessVecTest, Basic) {
+TEST(LogRegHessVecTest, Basic) {
     Eigen::MatrixXd Z;
     Eigen::VectorXd w, d;
     double lambda;
@@ -172,7 +172,10 @@ TEST(HessVecTest, Basic) {
 
     LogRegOracle func(Z, lambda);
 
-    Eigen::VectorXd hd = func.hessvec(w, d);
+    LogRegHessVec hv = func.hessvec();
+    hv.prepare(w);
+
+    Eigen::VectorXd hd = hv.calculate(d);
     EXPECT_NEAR(hd(0), -0.02091831, 1e-5);
     EXPECT_NEAR(hd(1), 0.03000242, 1e-5);
 }

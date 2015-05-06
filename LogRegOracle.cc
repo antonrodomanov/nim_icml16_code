@@ -52,13 +52,9 @@ Eigen::MatrixXd LogRegOracle::full_hess(const Eigen::VectorXd& w) const
     return H;
 }
 
-Eigen::VectorXd LogRegOracle::hessvec(const Eigen::VectorXd& w, const Eigen::VectorXd& d) const
+LogRegHessVec LogRegOracle::hessvec() const
 {
-    /* calcuate the diagonal part */
-    Eigen::VectorXd sigma = (Z * w).unaryExpr(std::ptr_fun(sigm));
-    Eigen::VectorXd s = sigma.array() * (1.0 - sigma.array());
-
-    return (1.0 / Z.rows()) * Z.transpose() * (s.array() * (Z * d).array()).matrix() + lambda * d;
+    return LogRegHessVec(Z, lambda);
 }
 
 double LogRegOracle::phi_prime(double mu) const
@@ -70,4 +66,24 @@ double LogRegOracle::phi_double_prime(double mu) const
 {
     double s = sigm(mu);
     return s * (1 - s);
+}
+
+/* ****************************************************************************************************************** */
+/* ************************************************ LogRegHessVec *************************************************** */
+/* ****************************************************************************************************************** */
+
+LogRegHessVec::LogRegHessVec(const Eigen::MatrixXd& Z, double lambda)
+    : Z(Z), lambda(lambda)
+{
+}
+
+void LogRegHessVec::prepare(const Eigen::VectorXd& w)
+{
+    Eigen::VectorXd sigma = (Z * w).unaryExpr(std::ptr_fun(sigm));
+    s = sigma.array() * (1.0 - sigma.array());
+}
+
+Eigen::VectorXd LogRegHessVec::calculate(const Eigen::VectorXd& d) const
+{
+    return (1.0 / Z.rows()) * Z.transpose() * (s.array() * (Z * d).array()).matrix() + lambda * d;
 }

@@ -3,6 +3,22 @@
 
 #include <Eigen/Dense>
 
+/* class for computing Hessian-vector products */
+class LogRegHessVec
+{
+public:
+    LogRegHessVec(const Eigen::MatrixXd& Z, double lambda);
+
+    void prepare(const Eigen::VectorXd& w); // calcuate the diagonal part s=sigma(w)*(1-sigma(w))
+    Eigen::VectorXd calculate(const Eigen::VectorXd& d) const; // calculate the actual product at point `w`
+
+private:
+    const Eigen::MatrixXd& Z;
+    double lambda;
+
+    Eigen::VectorXd s;
+};
+
 class LogRegOracle
 {
 public:
@@ -17,7 +33,7 @@ public:
     Eigen::VectorXd full_grad(const Eigen::VectorXd& w) const;
     Eigen::MatrixXd full_hess(const Eigen::VectorXd& w) const; // the elements will be stored in the **upper** triangular part
 
-    Eigen::VectorXd hessvec(const Eigen::VectorXd& w, const Eigen::VectorXd& d) const; // hessian-vector product H(w)*d
+    LogRegHessVec hessvec() const; // return the corresponding LogRegHessVec object
 
     double phi_prime(double mu) const;
     double phi_double_prime(double mu) const;

@@ -292,20 +292,23 @@ Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     logger.log(w);
 
     /* initialisation */
-    size_t n_full_calls = 0;
+    size_t n_full_calls = 0; // total number of function calls
 
     double f = func.full_val(w); // function value
     Eigen::VectorXd g = func.full_grad(w); // gradient
     ++n_full_calls;
 
-    Eigen::VectorXd d = Eigen::VectorXd::Zero(w.size());
+    Eigen::VectorXd d = Eigen::VectorXd::Zero(w.size()); // direction
+
+    LogRegHessVec hv = func.hessvec(); // for Hessian-vector products
 
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
         /* calculate direction d = -H^{-1} g approximately using CG */
         double norm_g = g.lpNorm<Eigen::Infinity>();
         double cg_tol = std::min(0.5, sqrt(norm_g)) * norm_g;
-        auto matvec = [&func, &w](const Eigen::VectorXd& d) { return func.hessvec(w, d); };
+        hv.prepare(w); // prepare for computing multiple Hessian-vector products at current point
+        auto matvec = [&hv](const Eigen::VectorXd& d) { return hv.calculate(d); };
         double gtd;
         while (true) {
             d = cg(matvec, -g, d, cg_tol);
