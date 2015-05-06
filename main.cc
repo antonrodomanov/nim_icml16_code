@@ -169,6 +169,8 @@ int main(int argc, char* argv[])
     if (n_logs_per_epoch == -1) { // if not set up yet
         if (method == "SO2") {
             n_logs_per_epoch = 10.0;
+        } else if (method == "BFGS" || method == "LBFGS") {
+            n_logs_per_epoch = 0.25;
         } else {
             n_logs_per_epoch = 1.0;
         }
