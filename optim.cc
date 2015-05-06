@@ -205,6 +205,7 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
         /* backtrack if needed */
         double gtd = g.dot(d); // directional derivative
         assert(gtd <= 0.0);
+        double norm_g = g.lpNorm<Eigen::Infinity>();
         double alpha = 1.0; // initial step length
         while (true) {
             /* make a step w += alpha * d */
@@ -217,7 +218,7 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
             ++n_full_calls;
 
             /* check Armijo condition */
-            if (f_new <= f + c1 * alpha * gtd) {
+            if (f_new <= f + c1 * alpha * gtd || norm_g < 1e-6) { // always use unit step length when close to optimum
                 w = w_new;
                 f = f_new;
                 break;
@@ -335,7 +336,7 @@ Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
             ++n_full_calls;
 
             /* check Armijo condition */
-            if (f_new <= f + c1 * alpha * gtd) {
+            if (f_new <= f + c1 * alpha * gtd || norm_g < 1e-6) { // always use unit step length when close to optimum
                 w = w_new;
                 f = f_new;
                 break;
@@ -386,6 +387,7 @@ Eigen::VectorXd BFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vect
         /* backtrack if needed */
         double gtd = g.dot(d); // directional derivative
         assert(gtd <= 0.0);
+        double norm_g = g.lpNorm<Eigen::Infinity>();
         double alpha = 1.0; // initial step length
         while (true) {
             /* make a step w += alpha * d */
@@ -397,7 +399,7 @@ Eigen::VectorXd BFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vect
             ++n_full_calls;
 
             /* check Armijo condition */
-            if (f_new <= f + c1 * alpha * gtd) {
+            if (f_new <= f + c1 * alpha * gtd || norm_g < 1e-6) { // always use unit step length when close to optimum
                 break;
             }
 
