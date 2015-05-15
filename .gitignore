@@ -2,7 +2,9 @@
 *.a
 main
 LogRegOracle_test
-output
+
+results/*.pdf
+results/.ipynb_checkpoints
 
 datasets/a9a/*
 !datasets/a9a/README
