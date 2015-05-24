@@ -9,7 +9,7 @@
 /* ****************************************************************************************************************** */
 /* *************************************************** SGD ********************************************************** */
 /* ****************************************************************************************************************** */
-Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, size_t maxiter)
+Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha)
 {
     /* prepare random number generator */
     std::random_device rd;
@@ -44,7 +44,7 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 /* *************************************************** SAG ********************************************************** */
 /* ****************************************************************************************************************** */
-Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, double alpha, size_t maxiter)
+Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha)
 {
     /* assign useful variables */
     const int N = func.n_samples();

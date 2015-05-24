@@ -204,13 +204,13 @@ int main(int argc, char* argv[])
         fprintf(stderr, "Use method SAG: alpha=%g\n", alpha);
 
         /* rum method */
-        SAG(func, logger, w0, alpha, maxiter);
+        SAG(func, logger, w0, maxiter, alpha);
     } else if (method == "SGD") {
         /* print summary */
         fprintf(stderr, "Use method SGD: alpha=%g\n", alpha);
 
         /* run method */
-        SGD(func, logger, w0, alpha, maxiter);
+        SGD(func, logger, w0, maxiter, alpha);
     } else if (method == "SO2") {
         /* print summary */
         fprintf(stderr, "Use method SO2: alpha=%g\n", alpha);
