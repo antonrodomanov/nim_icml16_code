@@ -99,7 +99,7 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 /* *************************************************** SO2 ********************************************************** */
 /* ****************************************************************************************************************** */
-Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter)
+Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha)
 {
     /* assign useful variables */
     const int N = func.n_samples();
@@ -122,7 +122,6 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     Eigen::MatrixXd B = (1.0 / lambda) * Eigen::MatrixXd::Identity(D, D); // inverse average hessian B = (1/N sum_i nabla^2 f_i(v_i))^{-1}
 
     int i = -1; // sample index; start with -1 because the first one will be (i+1) % N = 0
-    double alpha = 1.0; // step length (always use unit step length for now)
 
     /* log initial position */
     logger.log(w);

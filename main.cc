@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
     std::string dataset = "";
     double max_epochs = 1.0;
     double n_logs_per_epoch = -1;
-    double alpha = 1.0;
+    double alpha = -1;
     double tol = 1e-9;
     double opt_allowed_time = -1;
 
@@ -49,7 +49,8 @@ int main(int argc, char* argv[])
         );
         TCLAP::ValueArg<double> arg_alpha(
             "", "alpha",
-            "Learning rate for SGD (default: 1.0)",
+            "Step length for incremental methods (or learning rate for SGD) (default: 1.0 for SO2 or SGD; "
+            "1/L for SAG where L is the (global) Lipschitz constant)",
             false, alpha, "double"
         );
         TCLAP::ValueArg<double> arg_tol(
@@ -182,6 +183,15 @@ int main(int argc, char* argv[])
     } else { // non-incremental methods, one iteration >= one epoch
         maxiter = max_epochs;
     }
+    /* step length */
+    if (alpha == -1) { // if not set up yet
+        if (method == "SAG") { // use alpha=1/L by default
+            double L = 0.25 * Z.rowwise().squaredNorm().maxCoeff() + lambda; // global Lipschitz constant
+            alpha = 1.0 / L;
+        } else {
+            alpha = 1.0;
+        }
+    }
 
     /* =============================== Run optimiser ======================================= */
 
@@ -190,12 +200,8 @@ int main(int argc, char* argv[])
 
     /* run chosen method */
     if (method == "SAG") {
-        /* estimate the Lipschitz constant and step length */
-        double L = 0.25 * Z.rowwise().squaredNorm().maxCoeff() + lambda;
-        double alpha = 1.0 / L;
-
         /* print summary */
-        fprintf(stderr, "Use method SAG: L=%g, alpha=%g\n", L, alpha);
+        fprintf(stderr, "Use method SAG: alpha=%g\n", alpha);
 
         /* rum method */
         SAG(func, logger, w0, alpha, maxiter);
@@ -207,10 +213,10 @@ int main(int argc, char* argv[])
         SGD(func, logger, w0, alpha, maxiter);
     } else if (method == "SO2") {
         /* print summary */
-        fprintf(stderr, "Use method SO2\n");
+        fprintf(stderr, "Use method SO2: alpha=%g\n", alpha);
 
         /* run method */
-        SO2(func, logger, w0, maxiter);
+        SO2(func, logger, w0, maxiter, alpha);
     } else if (method == "newton") {
         /* print summary */
         fprintf(stderr, "Use Newton's method\n");
