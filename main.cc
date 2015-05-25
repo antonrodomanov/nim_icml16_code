@@ -243,10 +243,11 @@ int main(int argc, char* argv[])
     /* run chosen method */
     if (method == "SAG") {
         /* print summary */
-        fprintf(stderr, "Use method SAG: alpha=%g, sampling_scheme=%s\n", alpha, sampling_scheme.c_str());
+        fprintf(stderr, "Use method SAG: alpha=%g, sampling_scheme=%s, init_scheme=%s\n",
+                alpha, sampling_scheme.c_str(), init_scheme.c_str());
 
         /* rum method */
-        SAG(func, logger, w0, maxiter, alpha, sampling_scheme);
+        SAG(func, logger, w0, maxiter, alpha, sampling_scheme, init_scheme);
     } else if (method == "SGD") {
         /* print summary */
         fprintf(stderr, "Use method SGD: alpha=%g, sampling_scheme=%s\n", alpha, sampling_scheme.c_str());

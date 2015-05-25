@@ -13,7 +13,7 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
 /* Method SAG for **linear models** */
 Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
-                    const std::string& sampling_scheme);
+                    const std::string& sampling_scheme, const std::string& init_scheme);
 
 /* Method SO2 for **linear models** */
 Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,

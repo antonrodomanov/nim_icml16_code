@@ -104,14 +104,34 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 /* *************************************************** SAG ********************************************************** */
 /* ****************************************************************************************************************** */
+void sag_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
+                      Eigen::VectorXd& phi_prime, Eigen::VectorXd& g)
+{
+    /* assign useful variables */
+    const int N = func.n_samples();
+    const Eigen::MatrixXd& Z = func.Z;
+
+    /* take i-th training sample */
+    Eigen::VectorXd zi = Z.row(i).transpose();
+
+    /* compute phi_prime_new = phi'(z_i' * w) */
+    double phi_prime_new = func.phi_prime(zi.dot(w));
+
+    /* update g: g += 1/N delta_phi_prime * z_i */
+    double delta_phi_prime = phi_prime_new - phi_prime(i);
+    g += (1.0 / N) * delta_phi_prime * zi;
+
+    /* update model */
+    phi_prime(i) = phi_prime_new;
+}
+
 Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
-                    const std::string& sampling_scheme)
+                    const std::string& sampling_scheme, const std::string& init_scheme)
 {
     /* assign useful variables */
     const int N = func.n_samples();
     const int D = w0.size();
     const double lambda = func.lambda;
-    const Eigen::MatrixXd& Z = func.Z;
 
     /* assign starting point */
     Eigen::VectorXd w = w0;
@@ -124,6 +144,22 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
     Eigen::VectorXd g = Eigen::VectorXd::Zero(D); // average gradient g = 1/N sum_i nabla f_i(v_i)
 
+    if (init_scheme == "self-init") {
+        /* nothing to do here, everything will be done in the main loop */
+    } else if (init_scheme == "full") {
+        /* initialise all the components of the model at w0 */
+        for (int i = 0; i < N; ++i) {
+            /* update the current component of the model */
+            sag_update_model(func, i, w0, phi_prime, g);
+
+            /* don't cheat, call the logger because initialisation counts too */
+            if (logger.log(w0)) break;
+        }
+    } else {
+        fprintf(stderr, "Unknown initialisation scheme.\n");
+        throw 1;
+    }
+
     /* log initial position */
     logger.log(w);
 
@@ -132,18 +168,8 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         /* select next index */
         int i = sampler.sample();
 
-        /* take i-th training sample */
-        Eigen::VectorXd zi = Z.row(i).transpose();
-
-        /* compute phi_prime_new = phi'(z_i' * w) */
-        double phi_prime_new = func.phi_prime(zi.dot(w));
-
-        /* update g: g += 1/N delta_phi_prime * z_i */
-        double delta_phi_prime = phi_prime_new - phi_prime(i);
-        g += (1.0 / N) * delta_phi_prime * zi;
-
-        /* update model */
-        phi_prime(i) = phi_prime_new;
+        /* update the i-th component of the model */
+        sag_update_model(func, i, w, phi_prime, g);
 
         /* make a step w -= alpha * (g + lambda * w) */
         w -= alpha * (g + lambda * w);
