@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
     std::string method = "";
     std::string dataset = "";
     std::string sampling_scheme = "";
+    std::string init_scheme = "";
     double lambda = -1;
     double max_epochs = 1.0;
     double n_logs_per_epoch = -1;
@@ -76,8 +77,14 @@ int main(int argc, char* argv[])
             "(default: random for SAG and SGD; cyclic for SO2)",
             false, sampling_scheme, "string"
         );
+        TCLAP::ValueArg<std::string> arg_init_scheme(
+            "", "init_scheme",
+            "Initialisation scheme (only for SAG or SO2): self-init (default) or full (initialise every component at w0)",
+            false, init_scheme, "string"
+        );
 
         /* add options to parser */
+        cmd.add(arg_init_scheme);
         cmd.add(arg_sampling_scheme);
         cmd.add(arg_opt_allowed_time);
         cmd.add(arg_tol);
@@ -101,6 +108,7 @@ int main(int argc, char* argv[])
         tol = arg_tol.getValue();
         opt_allowed_time = arg_opt_allowed_time.getValue();
         sampling_scheme = arg_sampling_scheme.getValue();
+        init_scheme = arg_init_scheme.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
@@ -214,12 +222,16 @@ int main(int argc, char* argv[])
         }
     }
     /* sampling scheme */
-    if (sampling_scheme == "") {
+    if (sampling_scheme == "") { // if not set up yet
         if (method == "SAG" || method == "SGD") {
             sampling_scheme = "random";
         } else {
             sampling_scheme = "cyclic";
         }
+    }
+    /* initialisation scheme */
+    if (init_scheme == "") { // if not set up yet
+        init_scheme = "self-init";
     }
 
     /* =============================== Run optimiser ======================================= */
@@ -243,10 +255,11 @@ int main(int argc, char* argv[])
         SGD(func, logger, w0, maxiter, alpha, sampling_scheme);
     } else if (method == "SO2") {
         /* print summary */
-        fprintf(stderr, "Use method SO2: alpha=%g, sampling_scheme=%s\n", alpha, sampling_scheme.c_str());
+        fprintf(stderr, "Use method SO2: alpha=%g, sampling_scheme=%s, init_scheme=%s\n",
+                alpha, sampling_scheme.c_str(), init_scheme.c_str());
 
         /* run method */
-        SO2(func, logger, w0, maxiter, alpha, sampling_scheme);
+        SO2(func, logger, w0, maxiter, alpha, sampling_scheme, init_scheme);
     } else if (method == "newton") {
         /* print summary */
         fprintf(stderr, "Use Newton's method\n");

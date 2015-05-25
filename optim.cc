@@ -158,14 +158,54 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 /* *************************************************** SO2 ********************************************************** */
 /* ****************************************************************************************************************** */
+void so2_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
+                      Eigen::VectorXd& mu, Eigen::VectorXd& phi_prime, Eigen::VectorXd& phi_double_prime,
+                      Eigen::VectorXd& g, Eigen::VectorXd& p, Eigen::VectorXd& bgmp, Eigen::MatrixXd& B)
+{
+    /* assign useful variables */
+    const int N = func.n_samples();
+    const Eigen::MatrixXd& Z = func.Z;
+
+    /* take i-th training sample */
+    Eigen::VectorXd zi = Z.row(i).transpose();
+
+    /* compute new mu_i = z_i' * v_i where v_i = w */
+    double mu_new = zi.dot(w);
+
+    /* compute phi' and phi'' at mu_i */
+    double phi_prime_new = func.phi_prime(mu_new);
+    double phi_double_prime_new = func.phi_double_prime(mu_new);
+
+    /* update g: g += 1/N delta_phi_prime z_i */
+    double delta_phi_prime = phi_prime_new - phi_prime(i);
+    g += (1.0 / N) * delta_phi_prime * zi;
+
+    /* update p: p += 1/N (phi_double_prime_new * mu_new - phi_double_prime * mu) * z_i */
+    double delta_phi_double_prime_mu = phi_double_prime_new * mu_new - phi_double_prime(i) * mu(i);
+    p += (1.0 / N) * delta_phi_double_prime_mu * zi;
+
+    /* update B using Sherman-Morrison-Woodbury formula (rank-1 update) */
+    double delta_phi_double_prime = phi_double_prime_new - phi_double_prime(i);
+    Eigen::VectorXd bzi = B.selfadjointView<Eigen::Upper>() * zi;
+    double coef = delta_phi_double_prime / (N + delta_phi_double_prime * zi.dot(bzi));
+    B.selfadjointView<Eigen::Upper>().rankUpdate(bzi, -coef);
+
+    /* update bgmp: bgmp += [1/N (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi' (g_new - p_new)] * bzi */
+    bgmp += ((1.0 / N) * (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi.dot(g - p)) * bzi;
+
+    /* update model */
+    mu(i) = mu_new;
+    phi_prime(i) = phi_prime_new;
+    phi_double_prime(i) = phi_double_prime_new;
+}
+
 Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
-                    const std::string& sampling_scheme)
+                    const std::string& sampling_scheme, const std::string& init_scheme)
 {
     /* assign useful variables */
     const int N = func.n_samples();
     const int D = w0.size();
     const double lambda = func.lambda;
-    const Eigen::MatrixXd& Z = func.Z;
 
     /* assign starting point */
     Eigen::VectorXd w = w0;
@@ -181,6 +221,22 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
     Eigen::MatrixXd B = (1.0 / lambda) * Eigen::MatrixXd::Identity(D, D); // inverse average hessian B = (1/N sum_i nabla^2 f_i(v_i))^{-1}
 
+    if (init_scheme == "self-init") {
+        /* nothing to do here, everything will be done in the main loop */
+    } else if (init_scheme == "full") {
+        /* initialise all the components of the model at w0 */
+        for (int i = 0; i < N; ++i) {
+            /* update the current component of the model */
+            so2_update_model(func, i, w0, mu, phi_prime, phi_double_prime, g, p, bgmp, B);
+
+            /* don't cheat, call the logger because initialisation counts too */
+            if (logger.log(w0)) break;
+        }
+    } else {
+        fprintf(stderr, "Unknown initialisation scheme.\n");
+        throw 1;
+    }
+
     /* initialise index sampler */
     IndexSampler sampler(N, sampling_scheme);
 
@@ -192,37 +248,8 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         /* choose index */
         int i = sampler.sample();
 
-        /* take i-th training sample */
-        Eigen::VectorXd zi = Z.row(i).transpose();
-
-        /* compute new mu_i = z_i' * v_i where v_i = w */
-        double mu_new = zi.dot(w);
-
-        /* compute phi' and phi'' at mu_i */
-        double phi_prime_new = func.phi_prime(mu_new);
-        double phi_double_prime_new = func.phi_double_prime(mu_new);
-
-        /* update g: g += 1/N delta_phi_prime z_i */
-        double delta_phi_prime = phi_prime_new - phi_prime(i);
-        g += (1.0 / N) * delta_phi_prime * zi;
-
-        /* update p: p += 1/N (phi_double_prime_new * mu_new - phi_double_prime * mu) * z_i */
-        double delta_phi_double_prime_mu = phi_double_prime_new * mu_new - phi_double_prime(i) * mu(i);
-        p += (1.0 / N) * delta_phi_double_prime_mu * zi;
-
-        /* update B using Sherman-Morrison-Woodbury formula (rank-1 update) */
-        double delta_phi_double_prime = phi_double_prime_new - phi_double_prime(i);
-        Eigen::VectorXd bzi = B.selfadjointView<Eigen::Upper>() * zi;
-        double coef = delta_phi_double_prime / (N + delta_phi_double_prime * zi.dot(bzi));
-        B.selfadjointView<Eigen::Upper>().rankUpdate(bzi, -coef);
-
-        /* update bgmp: bgmp += [1/N (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi' (g_new - p_new)] * bzi */
-        bgmp += ((1.0 / N) * (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi.dot(g - p)) * bzi;
-
-        /* update model */
-        mu(i) = mu_new;
-        phi_prime(i) = phi_prime_new;
-        phi_double_prime(i) = phi_double_prime_new;
+        /* update the i-th component of the model */
+        so2_update_model(func, i, w, mu, phi_prime, phi_double_prime, g, p, bgmp, B);
 
         /* make a step w -= alpha * (w + B * (g - p)) */
         w -= alpha * (w + bgmp);

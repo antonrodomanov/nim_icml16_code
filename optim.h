@@ -17,7 +17,7 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
 /* Method SO2 for **linear models** */
 Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
-                    const std::string& sampling_scheme);
+                    const std::string& sampling_scheme, const std::string& init_scheme);
 
 /* Newton's method for a general strongly convex function */
 Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double c1=1e-4);
