@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
     std::string method = "";
     std::string dataset = "";
     std::string sampling_scheme = "";
+    double lambda = -1;
     double max_epochs = 1.0;
     double n_logs_per_epoch = -1;
     double alpha = -1;
@@ -37,6 +38,11 @@ int main(int argc, char* argv[])
             "Dataset (a9a, mushrooms, w8a, covtype, cod-rna, ijcnn1, gisette, quantum, protein, alpha, beta, "
             "gamma, delta, epsilon, zeta, fd, ocr, dna18)",
             true, dataset, "string"
+        );
+        TCLAP::ValueArg<double> arg_lambda(
+            "", "lambda",
+            "Regularisation coefficient (default: 1/N)",
+            false, lambda, "double"
         );
         TCLAP::ValueArg<double> arg_max_epochs(
             "", "max_epochs",
@@ -78,6 +84,7 @@ int main(int argc, char* argv[])
         cmd.add(arg_n_logs_per_epoch);
         cmd.add(arg_alpha);
         cmd.add(arg_max_epochs);
+        cmd.add(arg_lambda);
         cmd.add(arg_dataset);
         cmd.add(arg_method);
 
@@ -87,6 +94,7 @@ int main(int argc, char* argv[])
         /* retrieve option values */
         method = arg_method.getValue();
         dataset = arg_dataset.getValue();
+        lambda = arg_lambda.getValue();
         max_epochs = arg_max_epochs.getValue();
         n_logs_per_epoch = arg_n_logs_per_epoch.getValue();
         alpha = arg_alpha.getValue();
@@ -173,8 +181,12 @@ int main(int argc, char* argv[])
 
     /* ============================= Set up parameters ==================================== */
 
-    double lambda = 1.0 / Z.rows(); // regularisation coefficient
-    Eigen::VectorXd w0 = Eigen::VectorXd::Zero(Z.cols()); // starting point
+    /* starting point */
+    Eigen::VectorXd w0 = Eigen::VectorXd::Zero(Z.cols()); // start from zero
+    /* regularisation coefficient */
+    if (lambda == -1) { // if not set up yet
+        lambda = 1.0 / Z.rows();
+    }
     /* number of logs per epoch */
     if (n_logs_per_epoch == -1) { // if not set up yet
         if (method == "SO2") {
@@ -215,6 +227,7 @@ int main(int argc, char* argv[])
     LogRegOracle func(Z, lambda); // prepare oracle
     Logger logger(func, n_logs_per_epoch, tol, opt_allowed_time); // prepare logger
 
+    fprintf(stderr, "lambda=%g, max_epochs=%g\n", lambda, max_epochs);
     /* run chosen method */
     if (method == "SAG") {
         /* print summary */
