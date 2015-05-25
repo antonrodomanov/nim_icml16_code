@@ -15,6 +15,7 @@ int main(int argc, char* argv[])
     /* ============================= Parse commmand-line arguments ==================================== */
     std::string method = "";
     std::string dataset = "";
+    std::string sampling_scheme = "";
     double max_epochs = 1.0;
     double n_logs_per_epoch = -1;
     double alpha = -1;
@@ -63,8 +64,15 @@ int main(int argc, char* argv[])
             "Maximal amount of time for which the optimiser is allowed to work; set -1 for no limit (default: -1)",
             false, opt_allowed_time, "double"
         );
+        TCLAP::ValueArg<std::string> arg_sampling_scheme(
+            "", "sampling_scheme",
+            "Sampling scheme: cyclic, random or permute (only for incremental methods) "
+            "(default: random for SAG and SGD; cyclic for SO2)",
+            false, sampling_scheme, "string"
+        );
 
         /* add options to parser */
+        cmd.add(arg_sampling_scheme);
         cmd.add(arg_opt_allowed_time);
         cmd.add(arg_tol);
         cmd.add(arg_n_logs_per_epoch);
@@ -84,6 +92,7 @@ int main(int argc, char* argv[])
         alpha = arg_alpha.getValue();
         tol = arg_tol.getValue();
         opt_allowed_time = arg_opt_allowed_time.getValue();
+        sampling_scheme = arg_sampling_scheme.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
@@ -192,6 +201,14 @@ int main(int argc, char* argv[])
             alpha = 1.0;
         }
     }
+    /* sampling scheme */
+    if (sampling_scheme == "") {
+        if (method == "SAG" || method == "SGD") {
+            sampling_scheme = "random";
+        } else {
+            sampling_scheme = "cyclic";
+        }
+    }
 
     /* =============================== Run optimiser ======================================= */
 
@@ -201,22 +218,22 @@ int main(int argc, char* argv[])
     /* run chosen method */
     if (method == "SAG") {
         /* print summary */
-        fprintf(stderr, "Use method SAG: alpha=%g\n", alpha);
+        fprintf(stderr, "Use method SAG: alpha=%g, sampling_scheme=%s\n", alpha, sampling_scheme.c_str());
 
         /* rum method */
-        SAG(func, logger, w0, maxiter, alpha);
+        SAG(func, logger, w0, maxiter, alpha, sampling_scheme);
     } else if (method == "SGD") {
         /* print summary */
-        fprintf(stderr, "Use method SGD: alpha=%g\n", alpha);
+        fprintf(stderr, "Use method SGD: alpha=%g, sampling_scheme=%s\n", alpha, sampling_scheme.c_str());
 
         /* run method */
-        SGD(func, logger, w0, maxiter, alpha);
+        SGD(func, logger, w0, maxiter, alpha, sampling_scheme);
     } else if (method == "SO2") {
         /* print summary */
-        fprintf(stderr, "Use method SO2: alpha=%g\n", alpha);
+        fprintf(stderr, "Use method SO2: alpha=%g, sampling_scheme=%s\n", alpha, sampling_scheme.c_str());
 
         /* run method */
-        SO2(func, logger, w0, maxiter, alpha);
+        SO2(func, logger, w0, maxiter, alpha, sampling_scheme);
     } else if (method == "newton") {
         /* print summary */
         fprintf(stderr, "Use Newton's method\n");

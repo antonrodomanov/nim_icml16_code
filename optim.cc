@@ -2,30 +2,90 @@
 #include <random>
 #include <functional>
 #include <deque>
+#include <vector>
+#include <algorithm>
 
 #include "optim.h"
 #include "Logger.h"
 
+/* ================================================================================================================== */
+/* ============================================ IndexSampler ======================================================== */
+/* ================================================================================================================== */
+
+class IndexSampler {
+public:
+    IndexSampler(int N, const std::string& sampling_scheme)
+        : N(N), sampling_scheme(sampling_scheme), counter(0)
+    {
+        if (sampling_scheme == "cyclic") {
+        } else if (sampling_scheme == "random") {
+            /* prepare uniform random number generator */
+            std::random_device rd;
+            gen = std::mt19937(rd());
+            dis = std::uniform_int_distribution<>(0, N - 1);
+        } else if (sampling_scheme == "permute") {
+            /* populate `indices` with 0, 1, ..., N-1 for further random shuffling */
+            indices.resize(N);
+            for (int j = 0; j < N; ++j) indices[j] = j;
+        } else {
+            fprintf(stderr, "Unknown sampling scheme.\n");
+            throw 1;
+        }
+    }
+
+    int sample()
+    {
+        /* initialisation */
+        int i = -1;
+
+        /* actual sampling */
+        if (sampling_scheme == "cyclic") {
+            i = counter % N;
+        } else if (sampling_scheme == "random") {
+            i = dis(gen);
+        } else if (sampling_scheme == "permute") {
+            if (counter % N == 0) { /* random shuffle every epoch */
+                std::random_shuffle(indices.begin(), indices.end());
+            }
+            i = indices[counter % N];
+        }
+
+        /* count this call */
+        ++counter;
+
+        /* return result */
+        assert(i >= 0 && i < N); // make sure the returned index is valid
+        return i;
+    }
+
+private:
+    int N; // total number of samples
+    const std::string& sampling_scheme; // sampling scheme: cyclic, random or permute
+    std::mt19937 gen; // random generator (for the "random" sampling scheme)
+    std::uniform_int_distribution<> dis; // uniform number generator (for the "random" sampling scheme)
+    std::vector<int> indices; // random indices (for the "permute" sampling scheme)
+    size_t counter; // total number of samplings made
+};
+
 /* ****************************************************************************************************************** */
 /* *************************************************** SGD ********************************************************** */
 /* ****************************************************************************************************************** */
-Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha)
+Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
+                    const std::string& sampling_scheme)
 {
-    /* prepare random number generator */
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, func.n_samples() - 1);
-
     /* assign starting point */
     Eigen::VectorXd w = w0;
+
+    /* initialise index sampler */
+    IndexSampler sampler(func.n_samples(), sampling_scheme);
 
     /* log initial position */
     logger.log(w);
 
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
-        /* select random sample i */
-        int i = dis(gen);
+        /* select next index */
+        int i = sampler.sample();
 
         /* compute its gradient g_i = nabla f_i(w) */
         Eigen::VectorXd gi = func.single_grad(w, i);
@@ -44,7 +104,8 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 /* *************************************************** SAG ********************************************************** */
 /* ****************************************************************************************************************** */
-Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha)
+Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
+                    const std::string& sampling_scheme)
 {
     /* assign useful variables */
     const int N = func.n_samples();
@@ -52,13 +113,11 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     const double lambda = func.lambda;
     const Eigen::MatrixXd& Z = func.Z;
 
-    /* prepare random number generator */
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, N - 1);
-
     /* assign starting point */
     Eigen::VectorXd w = w0;
+
+    /* initialise index sampler */
+    IndexSampler sampler(N, sampling_scheme);
 
     /* initialisation */
     Eigen::VectorXd phi_prime = Eigen::VectorXd::Zero(N); // coefficients phi_prime(i) = phi'(z_i' * v_i)
@@ -70,8 +129,8 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
-        /* select random sample i */
-        int i = dis(gen);
+        /* select next index */
+        int i = sampler.sample();
 
         /* take i-th training sample */
         Eigen::VectorXd zi = Z.row(i).transpose();
@@ -99,7 +158,8 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 /* *************************************************** SO2 ********************************************************** */
 /* ****************************************************************************************************************** */
-Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha)
+Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
+                    const std::string& sampling_scheme)
 {
     /* assign useful variables */
     const int N = func.n_samples();
@@ -121,15 +181,16 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
     Eigen::MatrixXd B = (1.0 / lambda) * Eigen::MatrixXd::Identity(D, D); // inverse average hessian B = (1/N sum_i nabla^2 f_i(v_i))^{-1}
 
-    int i = -1; // sample index; start with -1 because the first one will be (i+1) % N = 0
+    /* initialise index sampler */
+    IndexSampler sampler(N, sampling_scheme);
 
     /* log initial position */
     logger.log(w);
 
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
-        /* choose index; use cyclic order */
-        i = (i + 1) % N;
+        /* choose index */
+        int i = sampler.sample();
 
         /* take i-th training sample */
         Eigen::VectorXd zi = Z.row(i).transpose();
