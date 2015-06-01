@@ -294,7 +294,12 @@ int main(int argc, char* argv[])
 
     /* construct the name of the output file */
     char out_filename[100];
-    sprintf(out_filename, "output/%s_%s.dat", dataset.c_str(), method.c_str());
+    if (method == "SAG" || method == "SGD" || method == "SO2") { // incremental methods
+        sprintf(out_filename, "output/%s.%s.alpha=%g.sampling=%s.init=%s.dat",
+                dataset.c_str(), method.c_str(), alpha, sampling_scheme.c_str(), init_scheme.c_str());
+    } else { // non-incremental methods
+        sprintf(out_filename, "output/%s.%s.dat", dataset.c_str(), method.c_str());
+    }
 
     /* creare output file */
     FILE* out_file;
