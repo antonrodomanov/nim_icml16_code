@@ -18,3 +18,12 @@ double sigm(double x)
 {
     return 1.0 / (1.0 + exp(-x));
 }
+
+/* returns argmin_x (tau||x||_1 + 1/2||x - x_0||) */
+Eigen::VectorXd soft_threshold(const Eigen::VectorXd& x0, double tau)
+{
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(x0.size());
+    x = (x0.array() > tau).select(x0.array() - tau, x);
+    x = (x0.array() < -tau).select(x0.array() + tau, x);
+    return x;
+}
