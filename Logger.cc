@@ -38,9 +38,9 @@ bool Logger::log(const Eigen::VectorXd& w, size_t n_full_calls)
             opt_elaps = 0.0;
         }
 
-        /* calculate function value and gradient norm */
-        double f = func.full_val(w);
-        double norm_g = func.full_grad(w).lpNorm<Eigen::Infinity>();
+        /* calculate function value and composite gradient norm */
+        double f = func.full_val(w) + func.lambda1 * w.lpNorm<1>(); // smooth part + non-smooth
+        double norm_g = (w - func.prox1(w - func.full_grad(w), 1)).lpNorm<Eigen::Infinity>(); // composite gradient with step length 1
 
         /* print calculated values */
         if (n_calls == 0) { /* print table header when it's the first call */

@@ -25,7 +25,7 @@ public:
     std::vector<double> trace_epoch; // epoch number
     std::vector<double> trace_elaps; // elapsed time
     std::vector<double> trace_val; // function value
-    std::vector<double> trace_norm_grad; // gradient norm
+    std::vector<double> trace_norm_grad; // composite gradient norm
 
 private:
     const LogRegOracle& func; // the function being traced
