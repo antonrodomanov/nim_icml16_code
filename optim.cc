@@ -353,6 +353,61 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
 }
 
 /* ****************************************************************************************************************** */
+/* *************************************************** FGM ********************************************************** */
+/* ****************************************************************************************************************** */
+
+Eigen::VectorXd fgm(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& x0, size_t maxiter)
+{
+    /* assign starting point */
+    Eigen::VectorXd x = x0;
+
+    /* log initial position */
+    logger.log(x);
+
+    /* initialisation */
+    size_t n_full_calls = 0;
+    double A = 0;
+    double L = 1;
+    Eigen::VectorXd v_bar = x0;
+
+    /* main loop */
+    for (size_t iter = 0; iter < maxiter; ++iter) {
+        Eigen::VectorXd v = func.prox1(v_bar, A);
+        Eigen::VectorXd T, gfT, gy;
+        double a;
+        while (true) {
+            double b = 1/L;
+            a = b + sqrt(b*b + 2*b*A);
+            Eigen::VectorXd y = (A * x + a * v) / (A + a);
+            Eigen::VectorXd gfy = func.full_grad(y);
+            ++n_full_calls;
+            T = func.prox1(y - (1/L)*gfy, 1/L);
+            gy = L*(y - T); // composite gradient
+            gfT = func.full_grad(T);
+            ++n_full_calls;
+
+            Eigen::VectorXd phi_prime = gy - (gfy - gfT);
+            if (phi_prime.dot(y - T) >= (1/L)*phi_prime.squaredNorm()) {
+                break;
+            }
+
+            L = 2 * L;
+            fprintf(stderr, "double L (L=%g)...\n", L);
+        }
+
+        x = T;
+        v_bar = v_bar - a * gfT;
+        A = A + a;
+        L = std::max(1.0, L / 2);
+
+        /* log current position */
+        if (logger.log(x, n_full_calls)) break;
+    }
+
+    return x;
+}
+
+/* ****************************************************************************************************************** */
 /* ******************************************** Conjugate gradient ************************************************** */
 /* ****************************************************************************************************************** */
 

@@ -26,7 +26,7 @@ public:
 
     int n_samples() const;
 
-    Eigen::VectorXd prox1(const Eigen::VectorXd& x0, double L) const;
+    Eigen::VectorXd prox1(const Eigen::VectorXd& x0, double A) const;
 
     double single_val(const Eigen::VectorXd& w, int i) const;
     Eigen::VectorXd single_grad(const Eigen::VectorXd& w, int i) const;

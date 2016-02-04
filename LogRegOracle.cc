@@ -10,10 +10,10 @@ LogRegOracle::LogRegOracle(const Eigen::MatrixXd& Z, double lambda, double lambd
 
 int LogRegOracle::n_samples() const { return Z.rows(); }
 
-/* returns argmin_x (lambda1||x||_1 + L/2||x - x_0||) */
-Eigen::VectorXd LogRegOracle::prox1(const Eigen::VectorXd& x0, double L) const
+/* returns argmin_x (A * lambda1||x||_1 + 1/2||x - x_0||) */
+Eigen::VectorXd LogRegOracle::prox1(const Eigen::VectorXd& x0, double A) const
 {
-    return soft_threshold(x0, lambda1 / L);
+    return soft_threshold(x0, A * lambda1);
 }
 
 double LogRegOracle::single_val(const Eigen::VectorXd& w, int i) const
