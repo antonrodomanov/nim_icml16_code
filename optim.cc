@@ -173,7 +173,7 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         sag_update_model(func, i, w, phi_prime, g);
 
         /* make a step w -= alpha * (g + lambda * w) */
-        w -= alpha * (g + lambda * w);
+        w = func.prox1(w - alpha * (g + lambda * w), alpha);
 
         /* log current position */
         if (logger.log(w)) break;
