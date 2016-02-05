@@ -4,17 +4,11 @@
 #include "special.h"
 
 LogRegOracle::LogRegOracle(const Eigen::MatrixXd& Z, double lambda, double lambda1)
-    : Z(Z), lambda(lambda), lambda1(lambda1)
+    : CompositeFunction(lambda1), Z(Z), lambda(lambda)
 {
 }
 
 int LogRegOracle::n_samples() const { return Z.rows(); }
-
-/* returns argmin_x (A * lambda1||x||_1 + 1/2||x - x_0||) */
-Eigen::VectorXd LogRegOracle::prox1(const Eigen::VectorXd& x0, double A) const
-{
-    return soft_threshold(x0, A * lambda1);
-}
 
 double LogRegOracle::single_val(const Eigen::VectorXd& w, int i) const
 {

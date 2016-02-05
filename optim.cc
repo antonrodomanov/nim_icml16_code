@@ -356,7 +356,7 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
 /* *************************************************** FGM ********************************************************** */
 /* ****************************************************************************************************************** */
 
-Eigen::VectorXd fgm(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& x0, size_t maxiter)
+Eigen::VectorXd fgm(const CompositeFunction& func, Logger& logger, const Eigen::VectorXd& x0, size_t maxiter)
 {
     /* assign starting point */
     Eigen::VectorXd x = x0;

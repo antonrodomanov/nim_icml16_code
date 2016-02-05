@@ -4,6 +4,7 @@
 #include <string>
 #include <Eigen/Dense>
 
+#include "CompositeFunction.h"
 #include "LogRegOracle.h"
 #include "Logger.h"
 
@@ -23,7 +24,7 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double c1=1e-4);
 
 /* Fast gradient method */
-Eigen::VectorXd fgm(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& x0, size_t maxiter);
+Eigen::VectorXd fgm(const CompositeFunction& func, Logger& logger, const Eigen::VectorXd& x0, size_t maxiter);
 
 /* Hessian-free Newton method */
 Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double c1=1e-4);

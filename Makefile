@@ -71,17 +71,17 @@ gtest_main.a : gtest-all.o gtest_main.o
 # gtest_main.a, depending on whether it defines its own main()
 # function.
 
-LogRegOracle.o : $(USER_DIR)/LogRegOracle.cc $(USER_DIR)/LogRegOracle.h $(USER_DIR)/special.h $(GTEST_HEADERS)
+LogRegOracle.o : $(USER_DIR)/LogRegOracle.cc $(USER_DIR)/LogRegOracle.h $(USER_DIR)/CompositeFunction.h $(USER_DIR)/special.h $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/LogRegOracle.cc
 
 LogRegOracle_test.o : $(USER_DIR)/LogRegOracle_test.cc \
                      $(USER_DIR)/LogRegOracle.h $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/LogRegOracle_test.cc
 
-LogRegOracle_test : LogRegOracle.o LogRegOracle_test.o special.o gtest_main.a
+LogRegOracle_test : LogRegOracle.o CompositeFunction.o LogRegOracle_test.o special.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
-main : main.o LogRegOracle.o optim.o special.o datasets.o Logger.o
+main : main.o CompositeFunction.o LogRegOracle.o optim.o special.o datasets.o Logger.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 main.o : $(USER_DIR)/main.cc
@@ -90,7 +90,7 @@ main.o : $(USER_DIR)/main.cc
 special.o : $(USER_DIR)/special.cc $(USER_DIR)/special.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/special.cc
 
-optim.o : $(USER_DIR)/optim.cc $(USER_DIR)/optim.h $(USER_DIR)/LogRegOracle.h $(USER_DIR)/Logger.h
+optim.o : $(USER_DIR)/optim.cc $(USER_DIR)/optim.h $(USER_DIR)/LogRegOracle.h $(USER_DIR)/CompositeFunction.h $(USER_DIR)/Logger.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/optim.cc
 
 datasets.o : $(USER_DIR)/datasets.cc $(USER_DIR)/datasets.h
@@ -98,3 +98,6 @@ datasets.o : $(USER_DIR)/datasets.cc $(USER_DIR)/datasets.h
 
 Logger.o : $(USER_DIR)/Logger.cc $(USER_DIR)/Logger.h $(USER_DIR)/LogRegOracle.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/Logger.cc
+
+CompositeFunction.o : $(USER_DIR)/CompositeFunction.cc $(USER_DIR)/CompositeFunction.h $(USER_DIR)/special.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/CompositeFunction.cc
