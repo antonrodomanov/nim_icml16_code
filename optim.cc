@@ -187,7 +187,8 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 void so2_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
                       Eigen::VectorXd& mu, Eigen::VectorXd& phi_prime, Eigen::VectorXd& phi_double_prime,
-                      Eigen::VectorXd& g, Eigen::VectorXd& p, Eigen::VectorXd& bgmp, Eigen::MatrixXd& B)
+                      Eigen::VectorXd& g, Eigen::VectorXd& p,
+                      Eigen::MatrixXd& H)
 {
     /* assign useful variables */
     const int N = func.n_samples();
@@ -211,14 +212,21 @@ void so2_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
     double delta_phi_double_prime_mu = phi_double_prime_new * mu_new - phi_double_prime(i) * mu(i);
     p += (1.0 / N) * delta_phi_double_prime_mu * zi;
 
-    /* update B using Sherman-Morrison-Woodbury formula (rank-1 update) */
+    /* update H */
     double delta_phi_double_prime = phi_double_prime_new - phi_double_prime(i);
-    Eigen::VectorXd bzi = B.selfadjointView<Eigen::Upper>() * zi;
-    double coef = delta_phi_double_prime / (N + delta_phi_double_prime * zi.dot(bzi));
-    B.selfadjointView<Eigen::Upper>().rankUpdate(bzi, -coef);
+    H.selfadjointView<Eigen::Upper>().rankUpdate(zi, delta_phi_double_prime/N);
+
+    /* update B using Sherman-Morrison-Woodbury formula (rank-1 update) */
+    //Eigen::VectorXd bzi = B.selfadjointView<Eigen::Upper>() * zi;
+    //double coef = delta_phi_double_prime / (N + delta_phi_double_prime * zi.dot(bzi));
+    //B.selfadjointView<Eigen::Upper>().rankUpdate(bzi, -coef);
 
     /* update bgmp: bgmp += [1/N (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi' (g_new - p_new)] * bzi */
-    bgmp += ((1.0 / N) * (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi.dot(g - p)) * bzi;
+    //bgmp += ((1.0 / N) * (delta_phi_prime - delta_phi_double_prime_mu) - coef * bzi.dot(g - p)) * bzi;
+    //bgmp = B.selfadjointView<Eigen::Upper>() * (g - p);
+    //Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> llt;
+    //llt.compute(H);
+    //bgmp = llt.solve(g - p);
 
     /* update model */
     mu(i) = mu_new;
@@ -244,9 +252,10 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
     Eigen::VectorXd g = Eigen::VectorXd::Zero(D); // average gradient g = 1/N sum_i nabla f_i(v_i)
     Eigen::VectorXd p = Eigen::VectorXd::Zero(D); // vector p = 1/N sum_i nabla^2 f_i(v_i) v_i
-    Eigen::VectorXd bgmp = Eigen::VectorXd::Zero(D); // vector bgmp = B * (g - p)
+    //Eigen::VectorXd bgmp = Eigen::VectorXd::Zero(D); // vector bgmp = B * (g - p)
 
-    Eigen::MatrixXd B = (1.0 / lambda) * Eigen::MatrixXd::Identity(D, D); // inverse average hessian B = (1/N sum_i nabla^2 f_i(v_i))^{-1}
+    Eigen::MatrixXd H = lambda * Eigen::MatrixXd::Identity(D, D); // average hessian H = (1/N sum_i nabla^2 f_i(v_i))
+    //Eigen::MatrixXd B = (1.0 / lambda) * Eigen::MatrixXd::Identity(D, D); // inverse average hessian B = (1/N sum_i nabla^2 f_i(v_i))^{-1}
 
     if (init_scheme == "self-init") {
         /* nothing to do here, everything will be done in the main loop */
@@ -254,7 +263,7 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         /* initialise all the components of the model at w0 */
         for (int i = 0; i < N; ++i) {
             /* update the current component of the model */
-            so2_update_model(func, i, w0, mu, phi_prime, phi_double_prime, g, p, bgmp, B);
+            so2_update_model(func, i, w0, mu, phi_prime, phi_double_prime, g, p, H);
 
             /* don't cheat, call the logger because initialisation counts too */
             if (logger.log(w0)) break;
@@ -276,10 +285,19 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         int i = sampler.sample();
 
         /* update the i-th component of the model */
-        so2_update_model(func, i, w, mu, phi_prime, phi_double_prime, g, p, bgmp, B);
+        so2_update_model(func, i, w, mu, phi_prime, phi_double_prime, g, p, H);
 
         /* make a step w -= alpha * (w + B * (g - p)) */
-        w -= alpha * (w + bgmp);
+        Eigen::VectorXd b = g - p;
+        QuadraticFunction mk = QuadraticFunction(H, b, func.lambda1);
+        double norm_g = (w - func.prox1(w - g, 1)).lpNorm<2>();
+        if (int(iter) < func.n_samples()) {
+            norm_g = 1;
+        }
+        double tol_fgm = std::min(1.0, pow(norm_g, 0.5)) * norm_g;
+        size_t maxiter_fgm = 10000;
+        Eigen::VectorXd w_bar = fgm(mk, w, maxiter_fgm, tol_fgm);
+        w += alpha * (w_bar - w);
 
         /* log current position */
         if (logger.log(w)) break;
@@ -345,18 +363,14 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
 /* *************************************************** FGM ********************************************************** */
 /* ****************************************************************************************************************** */
 
-Eigen::VectorXd fgm(const CompositeFunction& func, const Eigen::VectorXd& x0, size_t maxiter, double tol)
+Eigen::VectorXd fgm(const CompositeFunction& func, const Eigen::VectorXd& x0, size_t maxiter, double tol, double L0)
 {
     /* assign starting point */
     Eigen::VectorXd x = x0;
 
-    /* log initial position */
-    //logger.log(x);
-
     /* initialisation */
-    size_t n_full_calls = 0;
     double A = 0;
-    double L = 1;
+    double L = L0;
     Eigen::VectorXd v_bar = x0;
 
     /* main loop */
@@ -370,11 +384,14 @@ Eigen::VectorXd fgm(const CompositeFunction& func, const Eigen::VectorXd& x0, si
             a = b + sqrt(b*b + 2*b*A);
             y = (A * x + a * v) / (A + a);
             gfy = func.full_grad(y);
-            ++n_full_calls;
             T = func.prox1(y - (1/L)*gfy, 1/L);
             gy = L*(y - T); // composite gradient
+
+            if (gy.lpNorm<Eigen::Infinity>() < tol) {
+                break;
+            }
+
             gfT = func.full_grad(T);
-            ++n_full_calls;
 
             Eigen::VectorXd phi_prime = gy - (gfy - gfT);
             if (phi_prime.dot(y - T) >= (1/L)*phi_prime.squaredNorm()) {
@@ -382,23 +399,21 @@ Eigen::VectorXd fgm(const CompositeFunction& func, const Eigen::VectorXd& x0, si
             }
 
             L = 2 * L;
-            //fprintf(stderr, "double L (L=%g)...\n", L);
+        }
+
+        if (gy.lpNorm<Eigen::Infinity>() < tol) {
+            x = T;
+            break;
         }
 
         x = T;
         v_bar = v_bar - a * gfT;
         A = A + a;
-        L = std::max(1.0, L / 2);
 
-        if (gy.lpNorm<2>() < tol) {
-            break;
-        }
-
-        /* log current position */
-        //if (logger.log(x, n_full_calls)) break;
+        L = std::max(L0, L / 2);
     }
 
-    fprintf(stderr, "FGM finished in %zu iterations, norm_g=%g\n", iter, gy.lpNorm<Eigen::Infinity>());
+    //fprintf(stderr, "FGM finished in %zu iterations, norm_g=%g\n", iter, gy.lpNorm<Eigen::Infinity>());
 
     return x;
 }
