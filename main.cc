@@ -224,9 +224,9 @@ int main(int argc, char* argv[])
         maxiter = max_epochs;
     }
     /* step length */
+    double L = 0.25 * Z.rowwise().squaredNorm().maxCoeff() + lambda; // global Lipschitz constant
     if (alpha == -1) { // if not set up yet
         if (method == "SAG") { // use alpha=1/L by default
-            double L = 0.25 * Z.rowwise().squaredNorm().maxCoeff() + lambda; // global Lipschitz constant
             alpha = 1.0 / L;
         } else {
             alpha = 1.0;
@@ -250,7 +250,7 @@ int main(int argc, char* argv[])
     LogRegOracle func(Z, lambda, lambda1); // prepare oracle
     Logger logger(func, n_logs_per_epoch, tol, opt_allowed_time); // prepare logger
 
-    fprintf(stderr, "lambda=%g, lambda1=%g, max_epochs=%g\n", lambda, lambda1, max_epochs);
+    fprintf(stderr, "lambda=%g, lambda1=%g, L=%g, max_epochs=%g\n", lambda, lambda1, L, max_epochs);
     /* run chosen method */
     if (method == "SAG") {
         /* print summary */
