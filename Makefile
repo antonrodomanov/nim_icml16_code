@@ -81,7 +81,10 @@ LogRegOracle_test.o : $(USER_DIR)/LogRegOracle_test.cc \
 LogRegOracle_test : LogRegOracle.o CompositeFunction.o LogRegOracle_test.o special.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
-main : main.o CompositeFunction.o LogRegOracle.o optim.o special.o datasets.o Logger.o
+QuadraticFunction.o : $(USER_DIR)/QuadraticFunction.cc $(USER_DIR)/QuadraticFunction.h $(USER_DIR)/CompositeFunction.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/QuadraticFunction.cc
+
+main : main.o CompositeFunction.o LogRegOracle.o QuadraticFunction.o optim.o special.o datasets.o Logger.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
 
 main.o : $(USER_DIR)/main.cc

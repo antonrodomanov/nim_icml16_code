@@ -7,6 +7,7 @@
 
 #include "optim.h"
 #include "Logger.h"
+#include "QuadraticFunction.h"
 
 /* ================================================================================================================== */
 /* ============================================ IndexSampler ======================================================== */
@@ -291,8 +292,11 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ************************************************** Newton ******************************************************** */
 /* ****************************************************************************************************************** */
 
-Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double c1)
+Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, bool exact)
 {
+    /* some parameters */
+    const size_t maxiter_fgm = 10000;
+
     /* assign starting point */
     Eigen::VectorXd w = w0;
 
@@ -301,51 +305,36 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
 
     /* initialisation */
     size_t n_full_calls = 0;
-
-    double f = func.full_val(w); // function value
     Eigen::VectorXd g = func.full_grad(w); // gradient
     Eigen::MatrixXd H = func.full_hess(w); // Hessian
     ++n_full_calls;
 
-    Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> llt; // for calculating Cholesky decomposition of H
+    Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> llt; // for calculating Cholesky decomposition of H (if exact=true)
 
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
-        /* compute Cholesky decomposition H=L*L.T */
-        llt.compute(H);
-
-        /* calculate direction d = -H^{-1} g */
-        Eigen::VectorXd d = llt.solve(-g);
-
-        /* backtrack if needed */
-        double gtd = g.dot(d); // directional derivative
-        assert(gtd <= 0.0);
-        double norm_g = g.lpNorm<Eigen::Infinity>();
-        double alpha = 1.0; // initial step length
-        while (true) {
-            /* make a step w += alpha * d */
-            Eigen::VectorXd w_new = w + alpha * d;
-
-            /* call function at new point */
-            double f_new = func.full_val(w_new);
-            g = func.full_grad(w_new);
-            H = func.full_hess(w_new);
-            ++n_full_calls;
-
-            /* check Armijo condition */
-            if (f_new <= f + c1 * alpha * gtd || norm_g < 1e-6) { // always use unit step length when close to optimum
-                w = w_new;
-                f = f_new;
-                break;
+        if (!exact) {
+            Eigen::VectorXd b = g - H.selfadjointView<Eigen::Upper>() * w;
+            QuadraticFunction mk = QuadraticFunction(H, b, func.lambda1);
+            double norm_g = (w - func.prox1(w - g, 1)).lpNorm<2>();
+            double tol_fgm = std::min(1.0, sqrt(norm_g)) * norm_g;
+            w = fgm(mk, w, maxiter_fgm, tol_fgm);
+        } else {
+            if (func.lambda1 != 0) {
+                fprintf(stderr, "The function is non-smooth, don't use exact method!\n");
             }
-
-            /* if not satisfied, halve step length */
-            alpha /= 2;
-            fprintf(stderr, "backtrack (alpha=%g)...\n", alpha);
+            /* compute Cholesky decomposition H=L*L.T */
+            llt.compute(H);
+            /* calculate direction d = -H^{-1} g */
+            w = w + llt.solve(-g);
         }
 
+        /* call function at new point */
+        g = func.full_grad(w);
+        H = func.full_hess(w);
+        ++n_full_calls;
+
         /* log current position */
-        //fprintf(stderr, "iter=%zu, alpha=%g, f=%g, norm_g=%g\n", iter, alpha, f, g.lpNorm<Eigen::Infinity>());
         if (logger.log(w, n_full_calls)) break;
     }
 
@@ -356,13 +345,13 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
 /* *************************************************** FGM ********************************************************** */
 /* ****************************************************************************************************************** */
 
-Eigen::VectorXd fgm(const CompositeFunction& func, Logger& logger, const Eigen::VectorXd& x0, size_t maxiter)
+Eigen::VectorXd fgm(const CompositeFunction& func, const Eigen::VectorXd& x0, size_t maxiter, double tol)
 {
     /* assign starting point */
     Eigen::VectorXd x = x0;
 
     /* log initial position */
-    logger.log(x);
+    //logger.log(x);
 
     /* initialisation */
     size_t n_full_calls = 0;
@@ -371,15 +360,16 @@ Eigen::VectorXd fgm(const CompositeFunction& func, Logger& logger, const Eigen::
     Eigen::VectorXd v_bar = x0;
 
     /* main loop */
-    for (size_t iter = 0; iter < maxiter; ++iter) {
+    Eigen::VectorXd T, gfT, gy, y, gfy;
+    size_t iter;
+    for (iter = 0; iter < maxiter; ++iter) {
         Eigen::VectorXd v = func.prox1(v_bar, A);
-        Eigen::VectorXd T, gfT, gy;
         double a;
         while (true) {
             double b = 1/L;
             a = b + sqrt(b*b + 2*b*A);
-            Eigen::VectorXd y = (A * x + a * v) / (A + a);
-            Eigen::VectorXd gfy = func.full_grad(y);
+            y = (A * x + a * v) / (A + a);
+            gfy = func.full_grad(y);
             ++n_full_calls;
             T = func.prox1(y - (1/L)*gfy, 1/L);
             gy = L*(y - T); // composite gradient
@@ -392,7 +382,7 @@ Eigen::VectorXd fgm(const CompositeFunction& func, Logger& logger, const Eigen::
             }
 
             L = 2 * L;
-            fprintf(stderr, "double L (L=%g)...\n", L);
+            //fprintf(stderr, "double L (L=%g)...\n", L);
         }
 
         x = T;
@@ -400,9 +390,15 @@ Eigen::VectorXd fgm(const CompositeFunction& func, Logger& logger, const Eigen::
         A = A + a;
         L = std::max(1.0, L / 2);
 
+        if (gy.lpNorm<2>() < tol) {
+            break;
+        }
+
         /* log current position */
-        if (logger.log(x, n_full_calls)) break;
+        //if (logger.log(x, n_full_calls)) break;
     }
+
+    fprintf(stderr, "FGM finished in %zu iterations, norm_g=%g\n", iter, gy.lpNorm<Eigen::Infinity>());
 
     return x;
 }

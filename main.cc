@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
         /* specify all options */
         TCLAP::ValueArg<std::string> arg_method(
             "", "method",
-            "Optimisation method (SGD, SAG, SO2, FGM, newton, HFN, BFGS, LBFGS)",
+            "Optimisation method (SGD, SAG, SO2, newton, HFN, BFGS, LBFGS)",
             true, method, "string"
         );
         TCLAP::ValueArg<std::string> arg_dataset(
@@ -272,12 +272,6 @@ int main(int argc, char* argv[])
 
         /* run method */
         SO2(func, logger, w0, maxiter, alpha, sampling_scheme, init_scheme);
-    } else if (method == "FGM") {
-        /* print summary */
-        fprintf(stderr, "Use FGM\n");
-
-        /* run method */
-        fgm(func, logger, w0, maxiter);
     } else if (method == "newton") {
         /* print summary */
         fprintf(stderr, "Use Newton's method\n");
