@@ -24,6 +24,7 @@ int main(int argc, char* argv[])
     double alpha = -1;
     double tol = 1e-9;
     double opt_allowed_time = -1;
+    bool exact = false;
 
     try {
         /* prepare parser */
@@ -88,8 +89,14 @@ int main(int argc, char* argv[])
             "Initialisation scheme (only for SAG or SO2): self-init (default) or full (initialise every component at w0)",
             false, init_scheme, "string"
         );
+        TCLAP::ValueArg<bool> arg_exact(
+            "", "exact",
+            "Solve subprolem exactly (accuracy 1e-10) or not (only for SO2 and Newton): true or false",
+            false, exact, "bool"
+        );
 
         /* add options to parser */
+        cmd.add(arg_exact);
         cmd.add(arg_init_scheme);
         cmd.add(arg_sampling_scheme);
         cmd.add(arg_opt_allowed_time);
@@ -117,6 +124,7 @@ int main(int argc, char* argv[])
         opt_allowed_time = arg_opt_allowed_time.getValue();
         sampling_scheme = arg_sampling_scheme.getValue();
         init_scheme = arg_init_scheme.getValue();
+        exact = arg_exact.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     }
@@ -267,17 +275,17 @@ int main(int argc, char* argv[])
         SGD(func, logger, w0, maxiter, alpha, sampling_scheme);
     } else if (method == "SO2") {
         /* print summary */
-        fprintf(stderr, "Use method SO2: alpha=%g, sampling_scheme=%s, init_scheme=%s\n",
-                alpha, sampling_scheme.c_str(), init_scheme.c_str());
+        fprintf(stderr, "Use method SO2: alpha=%g, sampling_scheme=%s, init_scheme=%s, exact=%d\n",
+                alpha, sampling_scheme.c_str(), init_scheme.c_str(), exact);
 
         /* run method */
-        SO2(func, logger, w0, maxiter, alpha, sampling_scheme, init_scheme);
+        SO2(func, logger, w0, maxiter, alpha, sampling_scheme, init_scheme, exact);
     } else if (method == "newton") {
         /* print summary */
-        fprintf(stderr, "Use Newton's method\n");
+        fprintf(stderr, "Use Newton's method: exact=%d\n", exact);
 
         /* run method */
-        newton(func, logger, w0, maxiter);
+        newton(func, logger, w0, maxiter, exact);
     } else if (method == "HFN") {
         /* print summary */
         fprintf(stderr, "Use method HFN\n");
@@ -309,7 +317,11 @@ int main(int argc, char* argv[])
         sprintf(out_filename, "output/%s.%s.alpha=%g.sampling=%s.init=%s.dat",
                 dataset.c_str(), method.c_str(), alpha, sampling_scheme.c_str(), init_scheme.c_str());
     } else { // non-incremental methods
-        sprintf(out_filename, "output/%s.%s.dat", dataset.c_str(), method.c_str());
+        if (method == "newton" || method == "SO2") { // can be exact or inexact
+           sprintf(out_filename, "output/%s.%s.exact=%d.dat", dataset.c_str(), method.c_str(), exact);
+        } else {
+           sprintf(out_filename, "output/%s.%s.dat", dataset.c_str(), method.c_str());
+        }
     }
 
     /* creare output file */

@@ -235,7 +235,7 @@ void so2_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
 }
 
 Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
-                    const std::string& sampling_scheme, const std::string& init_scheme)
+                    const std::string& sampling_scheme, const std::string& init_scheme, bool exact)
 {
     /* assign useful variables */
     const int N = func.n_samples();
@@ -291,10 +291,15 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         Eigen::VectorXd b = g - p;
         QuadraticFunction mk = QuadraticFunction(H, b, func.lambda1);
         double norm_g = (w - func.prox1(w - g, 1)).lpNorm<2>();
-        if (int(iter) < func.n_samples()) {
-            norm_g = 1;
+        double tol_fgm;
+        if (!exact) {
+            tol_fgm = std::min(1.0, pow(norm_g, 0.5)) * norm_g;
+        } else {
+            tol_fgm = 1e-10;
         }
-        double tol_fgm = std::min(1.0, pow(norm_g, 0.5)) * norm_g;
+        if (int(iter) < func.n_samples()) {
+            tol_fgm = 1;
+        }
         size_t maxiter_fgm = 10000;
         Eigen::VectorXd w_bar = fgm(mk, w, maxiter_fgm, tol_fgm);
         w += alpha * (w_bar - w);
@@ -327,25 +332,18 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
     Eigen::MatrixXd H = func.full_hess(w); // Hessian
     ++n_full_calls;
 
-    Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> llt; // for calculating Cholesky decomposition of H (if exact=true)
-
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
+        Eigen::VectorXd b = g - H.selfadjointView<Eigen::Upper>() * w;
+        QuadraticFunction mk = QuadraticFunction(H, b, func.lambda1);
+        double tol_fgm;
         if (!exact) {
-            Eigen::VectorXd b = g - H.selfadjointView<Eigen::Upper>() * w;
-            QuadraticFunction mk = QuadraticFunction(H, b, func.lambda1);
             double norm_g = (w - func.prox1(w - g, 1)).lpNorm<2>();
-            double tol_fgm = std::min(1.0, sqrt(norm_g)) * norm_g;
-            w = fgm(mk, w, maxiter_fgm, tol_fgm);
+            tol_fgm = std::min(1.0, sqrt(norm_g)) * norm_g;
         } else {
-            if (func.lambda1 != 0) {
-                fprintf(stderr, "The function is non-smooth, don't use exact method!\n");
-            }
-            /* compute Cholesky decomposition H=L*L.T */
-            llt.compute(H);
-            /* calculate direction d = -H^{-1} g */
-            w = w + llt.solve(-g);
+            tol_fgm = 1e-10;
         }
+        w = fgm(mk, w, maxiter_fgm, tol_fgm);
 
         /* call function at new point */
         g = func.full_grad(w);
