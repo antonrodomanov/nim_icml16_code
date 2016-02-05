@@ -18,6 +18,7 @@ int main(int argc, char* argv[])
     std::string sampling_scheme = "";
     std::string init_scheme = "";
     double lambda = -1;
+    double lambda1 = -1;
     double max_epochs = 1.0;
     double n_logs_per_epoch = -1;
     double alpha = -1;
@@ -42,8 +43,13 @@ int main(int argc, char* argv[])
         );
         TCLAP::ValueArg<double> arg_lambda(
             "", "lambda",
-            "Regularisation coefficient (default: 1/N)",
+            "L2-regularisation coefficient (default: 1/N)",
             false, lambda, "double"
+        );
+        TCLAP::ValueArg<double> arg_lambda1(
+            "", "lambda1",
+            "L1-regularization coefficient (default: 0 if lambda!=0 or 1/N otherwise)",
+            false, lambda1, "double"
         );
         TCLAP::ValueArg<double> arg_max_epochs(
             "", "max_epochs",
@@ -92,6 +98,7 @@ int main(int argc, char* argv[])
         cmd.add(arg_alpha);
         cmd.add(arg_max_epochs);
         cmd.add(arg_lambda);
+        cmd.add(arg_lambda1);
         cmd.add(arg_dataset);
         cmd.add(arg_method);
 
@@ -102,6 +109,7 @@ int main(int argc, char* argv[])
         method = arg_method.getValue();
         dataset = arg_dataset.getValue();
         lambda = arg_lambda.getValue();
+        lambda1 = arg_lambda1.getValue();
         max_epochs = arg_max_epochs.getValue();
         n_logs_per_epoch = arg_n_logs_per_epoch.getValue();
         alpha = arg_alpha.getValue();
@@ -195,6 +203,9 @@ int main(int argc, char* argv[])
     if (lambda == -1) { // if not set up yet
         lambda = 1.0 / Z.rows();
     }
+    if (lambda1 == -1) { // not set up yet
+        lambda1 = (lambda == 0) ? (1.0 / Z.rows()) : 0;
+    }
     /* number of logs per epoch */
     if (n_logs_per_epoch == -1) { // if not set up yet
         if (method == "SO2") {
@@ -236,10 +247,10 @@ int main(int argc, char* argv[])
 
     /* =============================== Run optimiser ======================================= */
 
-    LogRegOracle func(Z, lambda); // prepare oracle
+    LogRegOracle func(Z, lambda, lambda1); // prepare oracle
     Logger logger(func, n_logs_per_epoch, tol, opt_allowed_time); // prepare logger
 
-    fprintf(stderr, "lambda=%g, max_epochs=%g\n", lambda, max_epochs);
+    fprintf(stderr, "lambda=%g, lambda1=%g, max_epochs=%g\n", lambda, lambda1, max_epochs);
     /* run chosen method */
     if (method == "SAG") {
         /* print summary */
@@ -300,7 +311,7 @@ int main(int argc, char* argv[])
 
     /* construct the name of the output file */
     char out_filename[100];
-    if (method == "SAG" || method == "SGD" || method == "SO2") { // incremental methods
+    if (method == "SAG" || method == "SGD") { // incremental methods
         sprintf(out_filename, "output/%s.%s.alpha=%g.sampling=%s.init=%s.dat",
                 dataset.c_str(), method.c_str(), alpha, sampling_scheme.c_str(), init_scheme.c_str());
     } else { // non-incremental methods
