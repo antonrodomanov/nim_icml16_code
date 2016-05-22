@@ -11,6 +11,6 @@ do
         echo "====================================================================================================="
         echo "Run alpha=$alpha on dataset $dataset"
 
-        ./main --dataset $dataset --method SO2 --max_epochs 200 --alpha $alpha
+        ./main --dataset $dataset --method NIM --max_epochs 200 --alpha $alpha
     done
 done

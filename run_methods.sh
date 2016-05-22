@@ -8,12 +8,12 @@ do
     echo "*******************************************************************************************************"
     echo "*******************************************************************************************************"
     echo "*******************************************************************************************************"
-    echo "Run SO2 on dataset $dataset"
+    echo "Run NIM on dataset $dataset"
 
-    ./main --dataset $dataset --method SO2 --max_epochs 500
+    ./main --dataset $dataset --method NIM --max_epochs 500
 
-    read epoch elapsed val norm_g < <(tail -n 1 output/"$dataset"_SO2.dat)
-    echo "SO2 finished in $elapsed seconds"
+    read epoch elapsed val norm_g < <(tail -n 1 output/"$dataset"_NIM.dat)
+    echo "NIM finished in $elapsed seconds"
 
     opt_allowed_time=`echo "4*$elapsed" | bc`
     for method in "${methods[@]}"

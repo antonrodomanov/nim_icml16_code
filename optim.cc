@@ -184,9 +184,9 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 }
 
 /* ****************************************************************************************************************** */
-/* *************************************************** SO2 ********************************************************** */
+/* *************************************************** NIM ********************************************************** */
 /* ****************************************************************************************************************** */
-void so2_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
+void nim_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
                       Eigen::VectorXd& mu, Eigen::VectorXd& phi_prime, Eigen::VectorXd& phi_double_prime,
                       Eigen::VectorXd& g, Eigen::VectorXd& p,
                       Eigen::MatrixXd& H)
@@ -235,7 +235,7 @@ void so2_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
     phi_double_prime(i) = phi_double_prime_new;
 }
 
-Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
+Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
                     const std::string& sampling_scheme, const std::string& init_scheme, bool exact)
 {
     /* assign useful variables */
@@ -264,7 +264,7 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         /* initialise all the components of the model at w0 */
         for (int i = 0; i < N; ++i) {
             /* update the current component of the model */
-            so2_update_model(func, i, w0, mu, phi_prime, phi_double_prime, g, p, H);
+            nim_update_model(func, i, w0, mu, phi_prime, phi_double_prime, g, p, H);
 
             /* don't cheat, call the logger because initialisation counts too */
             if (logger.log(w0)) break;
@@ -286,7 +286,7 @@ Eigen::VectorXd SO2(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         int i = sampler.sample();
 
         /* update the i-th component of the model */
-        so2_update_model(func, i, w, mu, phi_prime, phi_double_prime, g, p, H);
+        nim_update_model(func, i, w, mu, phi_prime, phi_double_prime, g, p, H);
 
         /* make a step w -= alpha * (w + B * (g - p)) */
         Eigen::VectorXd b = g - p;

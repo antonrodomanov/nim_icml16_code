@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
         /* specify all options */
         TCLAP::ValueArg<std::string> arg_method(
             "", "method",
-            "Optimisation method (SGD, SAG, SO2, newton, HFN, BFGS, LBFGS)",
+            "Optimisation method (SGD, SAG, NIM, newton, HFN, BFGS, LBFGS)",
             true, method, "string"
         );
         TCLAP::ValueArg<std::string> arg_dataset(
@@ -59,12 +59,12 @@ int main(int argc, char* argv[])
         );
         TCLAP::ValueArg<double> arg_n_logs_per_epoch(
             "", "n_logs_per_epoch",
-            "Number of requested logs per epoch (default: 1.0 for SGD and SAG; 10.0 for SO2)",
+            "Number of requested logs per epoch (default: 1.0 for SGD and SAG; 10.0 for NIM)",
             false, n_logs_per_epoch, "double"
         );
         TCLAP::ValueArg<double> arg_alpha(
             "", "alpha",
-            "Step length for incremental methods (or learning rate for SGD) (default: 1.0 for SO2 or SGD; "
+            "Step length for incremental methods (or learning rate for SGD) (default: 1.0 for NIM or SGD; "
             "1/L for SAG where L is the (global) Lipschitz constant)",
             false, alpha, "double"
         );
@@ -81,17 +81,17 @@ int main(int argc, char* argv[])
         TCLAP::ValueArg<std::string> arg_sampling_scheme(
             "", "sampling_scheme",
             "Sampling scheme: cyclic, random or permute (only for incremental methods) "
-            "(default: random for SAG and SGD; cyclic for SO2)",
+            "(default: random for SAG and SGD; cyclic for NIM)",
             false, sampling_scheme, "string"
         );
         TCLAP::ValueArg<std::string> arg_init_scheme(
             "", "init_scheme",
-            "Initialisation scheme (only for SAG or SO2): self-init (default) or full (initialise every component at w0)",
+            "Initialisation scheme (only for SAG or NIM): self-init (default) or full (initialise every component at w0)",
             false, init_scheme, "string"
         );
         TCLAP::ValueArg<bool> arg_exact(
             "", "exact",
-            "Solve subprolem exactly (accuracy 1e-10) or not (only for SO2 and Newton): true or false",
+            "Solve subprolem exactly (accuracy 1e-10) or not (only for NIM and Newton): true or false",
             false, exact, "bool"
         );
 
@@ -216,7 +216,7 @@ int main(int argc, char* argv[])
     }
     /* number of logs per epoch */
     if (n_logs_per_epoch == -1) { // if not set up yet
-        if (method == "SO2") {
+        if (method == "NIM") {
             n_logs_per_epoch = 10.0;
         } else if (method == "BFGS" || method == "LBFGS") {
             n_logs_per_epoch = 0.25;
@@ -226,7 +226,7 @@ int main(int argc, char* argv[])
     }
     /* maximum number of iterations */
     size_t maxiter;
-    if (method == "SGD" || method == "SAG" || method == "SO2") { // incremental methods
+    if (method == "SGD" || method == "SAG" || method == "NIM") { // incremental methods
         maxiter = max_epochs * size_t(Z.rows());
     } else { // non-incremental methods, one iteration >= one epoch
         maxiter = max_epochs;
@@ -273,13 +273,13 @@ int main(int argc, char* argv[])
 
         /* run method */
         SGD(func, logger, w0, maxiter, alpha, sampling_scheme);
-    } else if (method == "SO2") {
+    } else if (method == "NIM") {
         /* print summary */
-        fprintf(stderr, "Use method SO2: alpha=%g, sampling_scheme=%s, init_scheme=%s, exact=%d\n",
+        fprintf(stderr, "Use method NIM: alpha=%g, sampling_scheme=%s, init_scheme=%s, exact=%d\n",
                 alpha, sampling_scheme.c_str(), init_scheme.c_str(), exact);
 
         /* run method */
-        SO2(func, logger, w0, maxiter, alpha, sampling_scheme, init_scheme, exact);
+        NIM(func, logger, w0, maxiter, alpha, sampling_scheme, init_scheme, exact);
     } else if (method == "newton") {
         /* print summary */
         fprintf(stderr, "Use Newton's method: exact=%d\n", exact);
@@ -317,7 +317,7 @@ int main(int argc, char* argv[])
         sprintf(out_filename, "output/%s.%s.alpha=%g.sampling=%s.init=%s.dat",
                 dataset.c_str(), method.c_str(), alpha, sampling_scheme.c_str(), init_scheme.c_str());
     } else { // non-incremental methods
-        if (method == "newton" || method == "SO2") { // can be exact or inexact
+        if (method == "newton" || method == "NIM") { // can be exact or inexact
            sprintf(out_filename, "output/%s.%s.exact=%d.dat", dataset.c_str(), method.c_str(), exact);
         } else {
            sprintf(out_filename, "output/%s.%s.dat", dataset.c_str(), method.c_str());
