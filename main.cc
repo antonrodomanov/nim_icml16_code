@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
         /* specify all options */
         TCLAP::ValueArg<std::string> arg_method(
             "", "method",
-            "Optimisation method (SGD, SAG, NIM, newton, HFN, BFGS, LBFGS)",
+            "Optimisation method (SGD, SAG, NIM, newton, HFN, LBFGS)",
             true, method, "string"
         );
         TCLAP::ValueArg<std::string> arg_dataset(
@@ -226,7 +226,7 @@ int main(int argc, char* argv[])
     if (n_logs_per_epoch == -1) { // if not set up yet
         if (method == "NIM") {
             n_logs_per_epoch = 10.0;
-        } else if (method == "BFGS" || method == "LBFGS") {
+        } else if (method == "LBFGS") {
             n_logs_per_epoch = 0.25;
         } else {
             n_logs_per_epoch = 1.0;
@@ -300,12 +300,6 @@ int main(int argc, char* argv[])
 
         /* run method */
         HFN(func, logger, w0, maxiter);
-    } else if (method == "BFGS") {
-        /* print summary */
-        fprintf(stderr, "Use method BFGS\n");
-
-        /* run method */
-        BFGS(func, logger, w0, maxiter);
     } else if (method == "LBFGS") {
         /* print summary */
         fprintf(stderr, "Use method L-BFGS\n");
