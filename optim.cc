@@ -315,6 +315,9 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         } else {
             tol_inner = 1e-10;
         }
+        if (int(iter) < n_minibatches) { /* don't care too much about accuracy during first pass */
+            tol_inner = 1;
+        }
 
         /* Calculate model minimum `w_bar` */
         Eigen::VectorXd b = g - u;
