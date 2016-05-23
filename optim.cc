@@ -252,6 +252,8 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     const std::vector<int> minibatch_sizes = func.minibatch_sizes;
     const int d = w0.size();
     const double lambda = func.lambda;
+    const size_t maxiter_fgm = 10000;
+    Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> llt; // for calculating Cholesky decomposition of H
 
     /* assign starting point */
     Eigen::VectorXd w = w0;
@@ -272,6 +274,8 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
     Eigen::MatrixXd H = lambda * Eigen::MatrixXd::Identity(d, d); // average hessian H = (1/N sum_i nabla^2 f_i(v_i))
     //Eigen::MatrixXd B = (1.0 / lambda) * Eigen::MatrixXd::Identity(D, D); // inverse average hessian B = (1/N sum_i nabla^2 f_i(v_i))^{-1}
+
+    Eigen::VectorXd w_bar = Eigen::VectorXd::Zero(d);
 
     if (init_scheme == "self-init") {
         /* nothing to do here, everything will be done in the main loop */
@@ -303,18 +307,34 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         /* update the i-th component of the model */
         nim_update_model(func, j, w, mu_list, phi_prime_list, phi_double_prime_list, g, u, H);
 
-        /* make a step w_new = w + alpha (w_bar - w) */
-        Eigen::VectorXd b = g - u;
-        QuadraticFunction mk = QuadraticFunction(H, b, func.lambda1);
-        double norm_g = (w - func.prox1(w - g, 1)).lpNorm<2>();
-        double tol_fgm;
+        /* Determine the accuracy for inner problem */
+        double norm_g = (w - func.prox1(w - g, 1)).lpNorm<Eigen::Infinity>();
+        double tol_inner;
         if (!exact) {
-            tol_fgm = std::min(1.0, pow(norm_g, 0.5)) * norm_g;
+            tol_inner = std::min(1.0, sqrt(norm_g)) * norm_g;
         } else {
-            tol_fgm = 1e-10;
+            tol_inner = 1e-10;
         }
-        size_t maxiter_fgm = 10000;
-        Eigen::VectorXd w_bar = fgm(mk, w, maxiter_fgm, tol_fgm);
+
+        /* Calculate model minimum `w_bar` */
+        Eigen::VectorXd b = g - u;
+        if (func.lambda1 != 0) {
+            if (exact) { /* Solve exactly using Cholesky decomposition */
+                // compute Cholesky decomposition H=L*L.T
+                llt.compute(H);
+
+                // calculate direction d = -H^{-1} g
+                w_bar = llt.solve(-b);
+            } else { /* Solve using CG with early termination */;
+                auto matvec = [&](const Eigen::VectorXd& v) { return H.selfadjointView<Eigen::Upper>() * v; };
+                w_bar = cg(matvec, -b, w_bar, tol_inner);
+            }
+        } else { /* Solve using FGM */
+            QuadraticFunction mk = QuadraticFunction(H, b, func.lambda1);
+            w_bar = fgm(mk, w_bar, maxiter_fgm, tol_inner);
+        }
+        
+        /* Move to a new point */
         w += alpha * (w_bar - w);
 
         /* log current position */
@@ -448,11 +468,11 @@ Eigen::VectorXd fgm(const CompositeFunction& func, const Eigen::VectorXd& x0, si
         L = std::max(L0, L / 2);
     }
 
-    static int n_iters_total = 0;
-    static int n_calls = 0;
-    n_iters_total += iter+1;
-    ++n_calls;
-    fprintf(stderr, "FGM finished in %zu iterations, norm_g=%g, avg_n_iters=%g\n", iter+1, gy.lpNorm<Eigen::Infinity>(), double(n_iters_total) / n_calls);
+    // static int n_iters_total = 0;
+    // static int n_calls = 0;
+    // n_iters_total += iter+1;
+    // ++n_calls;
+    // fprintf(stderr, "FGM finished in %zu iterations, norm_g=%g, avg_n_iters=%g\n", iter+1, gy.lpNorm<Eigen::Infinity>(), double(n_iters_total) / n_calls);
 
     return x;
 }
@@ -477,7 +497,7 @@ Eigen::VectorXd cg(const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
 
     /* main loop */
     size_t iter = 0;
-    while (iter < maxiter && norm_r > tol) {
+    while ((iter < maxiter && norm_r > tol) || iter == 0) { // always make at least one iteration
         /* compute matrix-vector product */
         Eigen::VectorXd ad = matvec(d);
 
@@ -497,11 +517,11 @@ Eigen::VectorXd cg(const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
         norm_r = r.lpNorm<Eigen::Infinity>();
     }
 
-    static int n_iters_total = 0;
-    static int n_calls = 0;
-    n_iters_total += iter+1;
-    ++n_calls;
-    fprintf(stderr, "CG finished in %zu iterations, norm_g=%g, avg_n_iters=%g\n", iter+1, norm_r, double(n_iters_total) / n_calls);
+    // static int n_iters_total = 0;
+    // static int n_calls = 0;
+    // n_iters_total += iter+1;
+    // ++n_calls;
+    // fprintf(stderr, "CG finished in %zu iterations, norm_g=%g, avg_n_iters=%g\n", iter+1, norm_r, double(n_iters_total) / n_calls);
 
     return x;
 }
