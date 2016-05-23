@@ -318,7 +318,7 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
         /* Calculate model minimum `w_bar` */
         Eigen::VectorXd b = g - u;
-        if (func.lambda1 != 0) {
+        if (func.lambda1 == 0) {
             if (exact) { /* Solve exactly using Cholesky decomposition */
                 // compute Cholesky decomposition H=L*L.T
                 llt.compute(H);
