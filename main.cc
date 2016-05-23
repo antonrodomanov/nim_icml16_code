@@ -266,7 +266,7 @@ int main(int argc, char* argv[])
     LogRegOracle func(Z, lambda, lambda1, minibatch_size); // prepare oracle
     Logger logger(func, n_logs_per_epoch, tol, opt_allowed_time); // prepare logger
 
-    fprintf(stderr, "lambda=%g, lambda1=%g, L=%g, max_epochs=%g\n", lambda, lambda1, L, max_epochs);
+    fprintf(stderr, "lambda=%g, lambda1=%g, minibatch_size=%d, L=%g, max_epochs=%g\n", lambda, lambda1, minibatch_size, L, max_epochs);
     /* run chosen method */
     if (method == "SAG") {
         /* print summary */
