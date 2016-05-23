@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     double max_epochs = 1.0;
     double n_logs_per_epoch = -1;
     double alpha = -1;
-    double tol = 1e-9;
+    double tol = 1e-6;
     double opt_allowed_time = -1;
     bool exact = false;
 
@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
         );
         TCLAP::ValueArg<double> arg_tol(
             "", "tol",
-            "Gradient norm tolerance (default: 1e-9)",
+            "Gradient norm tolerance (default: 1e-6)",
             false, tol, "double"
         );
         TCLAP::ValueArg<double> arg_opt_allowed_time(
