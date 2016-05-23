@@ -20,11 +20,15 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
                     const std::string& sampling_scheme, const std::string& init_scheme, bool exact=false);
 
-/* Newton's method for a general strongly convex function */
+/* Newton's method (with unit step length) for a general strongly convex function */
 Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, bool exact=false);
 
 /* Fast gradient method */
 Eigen::VectorXd fgm(const CompositeFunction& func, const Eigen::VectorXd& x0, size_t maxiter, double tol=1e-5, double L0=1);
+
+/* Conjugate gradient method */
+Eigen::VectorXd cg(const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& matvec,
+                   const Eigen::VectorXd& b, const Eigen::VectorXd& x0, double tol);
 
 /* Hessian-free Newton method */
 Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double c1=1e-4);

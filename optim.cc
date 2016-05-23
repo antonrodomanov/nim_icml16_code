@@ -224,8 +224,7 @@ void nim_update_model(const LogRegOracle& func, int j, const Eigen::VectorXd& w,
     /* update H */
     Eigen::VectorXd delta_phi_double_prime = phi_double_prime_new - phi_double_prime_list[j];
     //H.selfadjointView<Eigen::Upper>().rankUpdate(zi, delta_phi_double_prime/N);
-    H +=
-        (1.0 / n) * (Z_minibatch.transpose() * (Z_minibatch.array().colwise() * delta_phi_double_prime.array()).matrix());
+    H += (1.0 / n) * (Z_minibatch.transpose() * (Z_minibatch.array().colwise() * delta_phi_double_prime.array()).matrix());
 
     /* update B using Sherman-Morrison-Woodbury formula (rank-1 update) */
     //Eigen::VectorXd bzi = B.selfadjointView<Eigen::Upper>() * zi;
@@ -349,18 +348,36 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
     Eigen::MatrixXd H = func.full_hess(w); // Hessian
     n_calls_add += n_samples;
 
+    Eigen::VectorXd d = Eigen::VectorXd::Zero(w.size());
+    Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> llt; // for calculating Cholesky decomposition of H
+
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
-        Eigen::VectorXd b = g - H.selfadjointView<Eigen::Upper>() * w;
-        QuadraticFunction mk = QuadraticFunction(H, b, func.lambda1);
-        double tol_fgm;
+        double tol_inner;
         if (!exact) {
-            double norm_g = (w - func.prox1(w - g, 1)).lpNorm<2>();
-            tol_fgm = std::min(1.0, sqrt(norm_g)) * norm_g;
+            double norm_g = (w - func.prox1(w - g, 1)).lpNorm<Eigen::Infinity>();
+            tol_inner = std::min(1.0, sqrt(norm_g)) * norm_g;
         } else {
-            tol_fgm = 1e-10;
+            tol_inner = 1e-10;
         }
-        w = fgm(mk, w, maxiter_fgm, tol_fgm);
+
+        if (func.lambda1 == 0) {
+            if (exact) { /* Solve exactly using Cholesky decomposition */
+                // compute Cholesky decomposition H=L*L.T
+                llt.compute(H);
+
+                // calculate direction d = -H^{-1} g
+                d = llt.solve(-g);
+            } else { /* Solve using CG with early termination */;
+                auto matvec = [&](const Eigen::VectorXd& v) { return H.selfadjointView<Eigen::Upper>() * v; };
+                d = cg(matvec, -g, d, tol_inner);
+            }
+            w += d;
+        } else { /* Solve using FGM */
+            Eigen::VectorXd b = g - H.selfadjointView<Eigen::Upper>() * w;
+            QuadraticFunction mk = QuadraticFunction(H, b, func.lambda1);
+            w = fgm(mk, w, maxiter_fgm, tol_inner);
+        }
 
         /* call function at new point */
         g = func.full_grad(w);
@@ -431,7 +448,11 @@ Eigen::VectorXd fgm(const CompositeFunction& func, const Eigen::VectorXd& x0, si
         L = std::max(L0, L / 2);
     }
 
-    //fprintf(stderr, "FGM finished in %zu iterations, norm_g=%g\n", iter, gy.lpNorm<Eigen::Infinity>());
+    static int n_iters_total = 0;
+    static int n_calls = 0;
+    n_iters_total += iter+1;
+    ++n_calls;
+    fprintf(stderr, "FGM finished in %zu iterations, norm_g=%g, avg_n_iters=%g\n", iter+1, gy.lpNorm<Eigen::Infinity>(), double(n_iters_total) / n_calls);
 
     return x;
 }
@@ -475,6 +496,12 @@ Eigen::VectorXd cg(const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
         r2 = r2_new;
         norm_r = r.lpNorm<Eigen::Infinity>();
     }
+
+    static int n_iters_total = 0;
+    static int n_calls = 0;
+    n_iters_total += iter+1;
+    ++n_calls;
+    fprintf(stderr, "CG finished in %zu iterations, norm_g=%g, avg_n_iters=%g\n", iter+1, norm_r, double(n_iters_total) / n_calls);
 
     return x;
 }
