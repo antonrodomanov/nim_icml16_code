@@ -24,7 +24,7 @@ private:
 class LogRegOracle : public CompositeFunction
 {
 public:
-    LogRegOracle(const Eigen::MatrixXd& Z, double lambda, double lambda1 = 0);
+    LogRegOracle(const Eigen::MatrixXd& Z, double lambda, double lambda1=0, int minibatch_size=1);
 
     int n_samples() const;
 
@@ -39,11 +39,15 @@ public:
 
     LogRegHessVec hessvec() const; // return the corresponding LogRegHessVec object
 
-    double phi_prime(double mu) const;
-    double phi_double_prime(double mu) const;
+    Eigen::VectorXd phi_prime(const Eigen::VectorXd& mu) const;
+    Eigen::VectorXd phi_double_prime(const Eigen::VectorXd& mu) const;
 
     const Eigen::MatrixXd& Z;
     double lambda;
+
+    int n_minibatches; // number of minibatches that samples are divided in
+    std::vector<int> minibatch_sizes; // vector containing the size of each minibatch (only one minibatch out of all may be of different size)
+    std::vector<Eigen::MatrixXd> Z_list; // list of submatrices of `Z` corresponding to minibatches
 };
 
 #endif

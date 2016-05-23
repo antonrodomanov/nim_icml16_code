@@ -19,6 +19,7 @@ int main(int argc, char* argv[])
     std::string init_scheme = "";
     double lambda = -1;
     double lambda1 = -1;
+    int minibatch_size = 1;
     double max_epochs = 1.0;
     double n_logs_per_epoch = -1;
     double alpha = -1;
@@ -51,6 +52,11 @@ int main(int argc, char* argv[])
             "", "lambda1",
             "L1-regularization coefficient (default: 0 if lambda!=0 or 1/N otherwise)",
             false, lambda1, "double"
+        );
+        TCLAP::ValueArg<double> arg_minibatch_size(
+            "", "minibatch_size",
+            "Minibatch size (default: 1). This parameter has no effect on non-incremental methods.",
+            false, minibatch_size, "int"
         );
         TCLAP::ValueArg<double> arg_max_epochs(
             "", "max_epochs",
@@ -104,6 +110,7 @@ int main(int argc, char* argv[])
         cmd.add(arg_n_logs_per_epoch);
         cmd.add(arg_alpha);
         cmd.add(arg_max_epochs);
+        cmd.add(arg_minibatch_size);
         cmd.add(arg_lambda);
         cmd.add(arg_lambda1);
         cmd.add(arg_dataset);
@@ -117,6 +124,7 @@ int main(int argc, char* argv[])
         dataset = arg_dataset.getValue();
         lambda = arg_lambda.getValue();
         lambda1 = arg_lambda1.getValue();
+        minibatch_size = arg_minibatch_size.getValue();
         max_epochs = arg_max_epochs.getValue();
         n_logs_per_epoch = arg_n_logs_per_epoch.getValue();
         alpha = arg_alpha.getValue();
@@ -227,7 +235,7 @@ int main(int argc, char* argv[])
     /* maximum number of iterations */
     size_t maxiter;
     if (method == "SGD" || method == "SAG" || method == "NIM") { // incremental methods
-        maxiter = max_epochs * size_t(Z.rows());
+        maxiter = max_epochs * size_t(ceil(double(Z.rows()) / minibatch_size));
     } else { // non-incremental methods, one iteration >= one epoch
         maxiter = max_epochs;
     }
@@ -255,7 +263,7 @@ int main(int argc, char* argv[])
 
     /* =============================== Run optimiser ======================================= */
 
-    LogRegOracle func(Z, lambda, lambda1); // prepare oracle
+    LogRegOracle func(Z, lambda, lambda1, minibatch_size); // prepare oracle
     Logger logger(func, n_logs_per_epoch, tol, opt_allowed_time); // prepare logger
 
     fprintf(stderr, "lambda=%g, lambda1=%g, L=%g, max_epochs=%g\n", lambda, lambda1, L, max_epochs);

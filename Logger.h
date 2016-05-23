@@ -17,10 +17,10 @@ public:
     */
     Logger(const LogRegOracle& func, double n_logs_per_epoch=10.0, double tol=1e-5, double opt_allowed_time=-1.0);
 
-    /* Argument `n_full_calls` is used by **non-incremental** optimisers and equals the total number of oracle calls made by the optimiser.
+    /* Argument `n_calls_add` equals the number of samples processed since the last call to this function.
        This function usually returns true; when returns false, the optimiser should terminate.
     */
-    bool log(const Eigen::VectorXd& w, size_t n_full_calls=0);
+    bool log(const Eigen::VectorXd& w, size_t n_calls_add=1);
 
     std::vector<double> trace_epoch; // epoch number
     std::vector<double> trace_elaps; // elapsed time
@@ -32,6 +32,7 @@ private:
     const size_t how_often; // frequency of logging, in number of calls
 
     size_t n_calls; // number of times this logger has been called
+    size_t n_calls_last; // last value of `n_calls` when info was reported (needed for `how_often`)
     clock_t t_start; // time of creation of this logger
     double mainten_time; // total time spent on maintenance tasks
 

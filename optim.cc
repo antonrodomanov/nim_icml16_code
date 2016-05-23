@@ -74,11 +74,16 @@ private:
 Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
                     const std::string& sampling_scheme)
 {
+    /* Auxiliary variables */
+    const int n_samples = func.n_samples();
+    const int n_minibatches = func.n_minibatches;
+    const std::vector<int>& minibatch_sizes = func.minibatch_sizes;
+
     /* assign starting point */
     Eigen::VectorXd w = w0;
 
     /* initialise index sampler */
-    IndexSampler sampler(func.n_samples(), sampling_scheme);
+    IndexSampler sampler(n_minibatches, sampling_scheme);
 
     /* log initial position */
     logger.log(w);
@@ -86,18 +91,21 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
         /* select next index */
-        int i = sampler.sample();
+        int j = sampler.sample();
 
         /* compute its gradient g_i = nabla f_i(w) */
-        Eigen::VectorXd gi = func.single_grad(w, i);
+        const Eigen::MatrixXd& Z_minibatch = func.Z_list[j];
+        Eigen::VectorXd mu = Z_minibatch * w;
+        Eigen::VectorXd sg = (double(n_minibatches) / n_samples) *
+            (Z_minibatch.transpose() * func.phi_prime(mu));
 
         /* make a step w -= alpha * g_i */
         double epoch = double(iter) / func.n_samples();
-        double sl = alpha / (epoch + 1);
-        w = func.prox1(w - sl * gi, sl);
+        double step_length = alpha / (epoch + 1);
+        w = func.prox1(w - step_length * sg, step_length);
 
         /* log current position */
-        if (logger.log(w)) break;
+        if (logger.log(w, minibatch_sizes[j])) break;
     }
 
     return w;
@@ -106,78 +114,80 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 /* *************************************************** SAG ********************************************************** */
 /* ****************************************************************************************************************** */
-void sag_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
-                      Eigen::VectorXd& phi_prime, Eigen::VectorXd& g)
+void sag_update_model(const LogRegOracle& func, int j, const Eigen::VectorXd& w,
+                      std::vector<Eigen::VectorXd>& phi_prime_list, Eigen::VectorXd& g)
 {
     /* assign useful variables */
-    const int N = func.n_samples();
-    const Eigen::MatrixXd& Z = func.Z;
-
-    /* take i-th training sample */
-    Eigen::VectorXd zi = Z.row(i).transpose();
+    const int n = func.n_samples();
+    const Eigen::MatrixXd& Z_minibatch = func.Z_list[j];
 
     /* compute phi_prime_new = phi'(z_i' * w) */
-    double phi_prime_new = func.phi_prime(zi.dot(w));
+    Eigen::VectorXd mu = Z_minibatch * w;
+    Eigen::VectorXd phi_prime_new = func.phi_prime(mu);
 
     /* update g: g += 1/N delta_phi_prime * z_i */
-    double delta_phi_prime = phi_prime_new - phi_prime(i);
-    g += (1.0 / N) * delta_phi_prime * zi;
+    Eigen::VectorXd delta_phi_prime = phi_prime_new - phi_prime_list[j];
+    g += (1.0 / n) * Z_minibatch.transpose() * delta_phi_prime;
 
     /* update model */
-    phi_prime(i) = phi_prime_new;
+    phi_prime_list[j] = phi_prime_new;
 }
 
 Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
                     const std::string& sampling_scheme, const std::string& init_scheme)
 {
     /* assign useful variables */
-    const int N = func.n_samples();
-    const int D = w0.size();
+    const int n_minibatches = func.n_minibatches;
+    const std::vector<int>& minibatch_sizes = func.minibatch_sizes;
+    const int d = w0.size();
     const double lambda = func.lambda;
 
     /* assign starting point */
     Eigen::VectorXd w = w0;
 
     /* initialise index sampler */
-    IndexSampler sampler(N, sampling_scheme);
+    IndexSampler sampler(n_minibatches, sampling_scheme);
 
     /* initialisation */
-    Eigen::VectorXd phi_prime = Eigen::VectorXd::Zero(N); // coefficients phi_prime(i) = phi'(z_i' * v_i)
+    std::vector<Eigen::VectorXd> phi_prime_list(n_minibatches); // coefficients phi_prime(i) = phi'(z_i' * v_i)
+    for (int j = 0; j < n_minibatches; ++j) {
+        phi_prime_list[j] = Eigen::VectorXd::Zero(minibatch_sizes[j]);
+    }
 
-    Eigen::VectorXd g = Eigen::VectorXd::Zero(D); // average gradient g = 1/N sum_i nabla f_i(v_i)
+    Eigen::VectorXd g = Eigen::VectorXd::Zero(d); // average gradient g = 1/N sum_i nabla f_i(v_i)
 
     if (init_scheme == "self-init") {
         /* nothing to do here, everything will be done in the main loop */
     } else if (init_scheme == "full") {
         /* initialise all the components of the model at w0 */
-        for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < n_minibatches; ++j) {
             /* update the current component of the model */
-            sag_update_model(func, i, w0, phi_prime, g);
+            sag_update_model(func, j, w0, phi_prime_list, g);
 
             /* don't cheat, call the logger because initialisation counts too */
-            if (logger.log(w0)) break;
+            if (logger.log(w0, minibatch_sizes[j])) break;
         }
     } else {
         fprintf(stderr, "Unknown initialisation scheme.\n");
         throw 1;
     }
 
-    /* log initial position */
+    /* log initial position (only for aesthetic purposes) */
     logger.log(w);
 
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
         /* select next index */
-        int i = sampler.sample();
+        int j = sampler.sample();
 
         /* update the i-th component of the model */
-        sag_update_model(func, i, w, phi_prime, g);
+        sag_update_model(func, j, w, phi_prime_list, g);
 
         /* make a step w -= alpha * (g + lambda * w) */
         w = func.prox1(w - alpha * (g + lambda * w), alpha);
 
         /* log current position */
-        if (logger.log(w)) break;
+        if (logger.log(w, minibatch_sizes[j])) break;
     }
 
     return w;
@@ -186,36 +196,36 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 /* ****************************************************************************************************************** */
 /* *************************************************** NIM ********************************************************** */
 /* ****************************************************************************************************************** */
-void nim_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
-                      Eigen::VectorXd& mu, Eigen::VectorXd& phi_prime, Eigen::VectorXd& phi_double_prime,
-                      Eigen::VectorXd& g, Eigen::VectorXd& p,
-                      Eigen::MatrixXd& H)
+void nim_update_model(const LogRegOracle& func, int j, const Eigen::VectorXd& w,
+                      std::vector<Eigen::VectorXd>& mu_list, std::vector<Eigen::VectorXd>& phi_prime_list,
+                      std::vector<Eigen::VectorXd>& phi_double_prime_list,
+                      Eigen::VectorXd& g, Eigen::VectorXd& u, Eigen::MatrixXd& H)
 {
     /* assign useful variables */
-    const int N = func.n_samples();
-    const Eigen::MatrixXd& Z = func.Z;
-
-    /* take i-th training sample */
-    Eigen::VectorXd zi = Z.row(i).transpose();
+    const int n = func.n_samples();
+    const Eigen::MatrixXd& Z_minibatch = func.Z_list[j];
 
     /* compute new mu_i = z_i' * v_i where v_i = w */
-    double mu_new = zi.dot(w);
+    Eigen::VectorXd mu_new = Z_minibatch * w;
 
     /* compute phi' and phi'' at mu_i */
-    double phi_prime_new = func.phi_prime(mu_new);
-    double phi_double_prime_new = func.phi_double_prime(mu_new);
+    Eigen::VectorXd phi_prime_new = func.phi_prime(mu_new);
+    Eigen::VectorXd phi_double_prime_new = func.phi_double_prime(mu_new);
 
     /* update g: g += 1/N delta_phi_prime z_i */
-    double delta_phi_prime = phi_prime_new - phi_prime(i);
-    g += (1.0 / N) * delta_phi_prime * zi;
+    Eigen::VectorXd delta_phi_prime = phi_prime_new - phi_prime_list[j];
+    g += (1.0 / n) * Z_minibatch.transpose() * delta_phi_prime;
 
     /* update p: p += 1/N (phi_double_prime_new * mu_new - phi_double_prime * mu) * z_i */
-    double delta_phi_double_prime_mu = phi_double_prime_new * mu_new - phi_double_prime(i) * mu(i);
-    p += (1.0 / N) * delta_phi_double_prime_mu * zi;
+    Eigen::VectorXd delta_phi_double_prime_mu =
+        phi_double_prime_new.array() * mu_new.array() - phi_double_prime_list[j].array() * mu_list[j].array();
+    u += (1.0 / n) * Z_minibatch.transpose() * delta_phi_double_prime_mu;
 
     /* update H */
-    double delta_phi_double_prime = phi_double_prime_new - phi_double_prime(i);
-    H.selfadjointView<Eigen::Upper>().rankUpdate(zi, delta_phi_double_prime/N);
+    Eigen::VectorXd delta_phi_double_prime = phi_double_prime_new - phi_double_prime_list[j];
+    //H.selfadjointView<Eigen::Upper>().rankUpdate(zi, delta_phi_double_prime/N);
+    H +=
+        (1.0 / n) * (Z_minibatch.transpose() * (Z_minibatch.array().colwise() * delta_phi_double_prime.array()).matrix());
 
     /* update B using Sherman-Morrison-Woodbury formula (rank-1 update) */
     //Eigen::VectorXd bzi = B.selfadjointView<Eigen::Upper>() * zi;
@@ -230,44 +240,50 @@ void nim_update_model(const LogRegOracle& func, int i, const Eigen::VectorXd& w,
     //bgmp = llt.solve(g - p);
 
     /* update model */
-    mu(i) = mu_new;
-    phi_prime(i) = phi_prime_new;
-    phi_double_prime(i) = phi_double_prime_new;
+    mu_list[j] = mu_new;
+    phi_prime_list[j] = phi_prime_new;
+    phi_double_prime_list[j] = phi_double_prime_new;
 }
 
 Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double alpha,
                     const std::string& sampling_scheme, const std::string& init_scheme, bool exact)
 {
     /* assign useful variables */
-    const int N = func.n_samples();
-    const int D = w0.size();
+    const int n_minibatches = func.n_minibatches;
+    const std::vector<int> minibatch_sizes = func.minibatch_sizes;
+    const int d = w0.size();
     const double lambda = func.lambda;
 
     /* assign starting point */
     Eigen::VectorXd w = w0;
 
     /* initialisation */
-    Eigen::VectorXd mu = Eigen::VectorXd::Zero(N); // coefficients mu_i = z_i' * v_i
-    Eigen::VectorXd phi_prime = Eigen::VectorXd::Zero(N); // coefficients phi_prime(i) = phi'(mu_i)
-    Eigen::VectorXd phi_double_prime = Eigen::VectorXd::Zero(N); // coefficients phi_doube_prime(i) = phi''(mu_i)
+    std::vector<Eigen::VectorXd> mu_list(n_minibatches); // coefficients mu_i = z_i' * v_i
+    std::vector<Eigen::VectorXd> phi_prime_list(n_minibatches); // coefficients phi_prime(i) = phi'(mu_i)
+    std::vector<Eigen::VectorXd> phi_double_prime_list(n_minibatches); // coefficients phi_doube_prime(i) = phi''(mu_i)
+    for (int j = 0; j < n_minibatches; ++j) {
+        mu_list[j] = Eigen::VectorXd::Zero(minibatch_sizes[j]);
+        phi_prime_list[j] = Eigen::VectorXd::Zero(minibatch_sizes[j]);
+        phi_double_prime_list[j] = Eigen::VectorXd::Zero(minibatch_sizes[j]);
+    }
 
-    Eigen::VectorXd g = Eigen::VectorXd::Zero(D); // average gradient g = 1/N sum_i nabla f_i(v_i)
-    Eigen::VectorXd p = Eigen::VectorXd::Zero(D); // vector p = 1/N sum_i nabla^2 f_i(v_i) v_i
+    Eigen::VectorXd g = Eigen::VectorXd::Zero(d); // average gradient g = 1/N sum_i nabla f_i(v_i)
+    Eigen::VectorXd u = Eigen::VectorXd::Zero(d); // vector u = 1/N sum_i nabla^2 f_i(v_i) v_i
     //Eigen::VectorXd bgmp = Eigen::VectorXd::Zero(D); // vector bgmp = B * (g - p)
 
-    Eigen::MatrixXd H = lambda * Eigen::MatrixXd::Identity(D, D); // average hessian H = (1/N sum_i nabla^2 f_i(v_i))
+    Eigen::MatrixXd H = lambda * Eigen::MatrixXd::Identity(d, d); // average hessian H = (1/N sum_i nabla^2 f_i(v_i))
     //Eigen::MatrixXd B = (1.0 / lambda) * Eigen::MatrixXd::Identity(D, D); // inverse average hessian B = (1/N sum_i nabla^2 f_i(v_i))^{-1}
 
     if (init_scheme == "self-init") {
         /* nothing to do here, everything will be done in the main loop */
     } else if (init_scheme == "full") {
         /* initialise all the components of the model at w0 */
-        for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < n_minibatches; ++j) {
             /* update the current component of the model */
-            nim_update_model(func, i, w0, mu, phi_prime, phi_double_prime, g, p, H);
+            nim_update_model(func, j, w0, mu_list, phi_prime_list, phi_double_prime_list, g, u, H);
 
             /* don't cheat, call the logger because initialisation counts too */
-            if (logger.log(w0)) break;
+            if (logger.log(w0, minibatch_sizes[j])) break;
         }
     } else {
         fprintf(stderr, "Unknown initialisation scheme.\n");
@@ -275,21 +291,21 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     }
 
     /* initialise index sampler */
-    IndexSampler sampler(N, sampling_scheme);
+    IndexSampler sampler(n_minibatches, sampling_scheme);
 
-    /* log initial position */
+    /* log initial position (only for aesthetic purposes) */
     logger.log(w);
 
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
         /* choose index */
-        int i = sampler.sample();
+        int j = sampler.sample();
 
         /* update the i-th component of the model */
-        nim_update_model(func, i, w, mu, phi_prime, phi_double_prime, g, p, H);
+        nim_update_model(func, j, w, mu_list, phi_prime_list, phi_double_prime_list, g, u, H);
 
-        /* make a step w -= alpha * (w + B * (g - p)) */
-        Eigen::VectorXd b = g - p;
+        /* make a step w_new = w + alpha (w_bar - w) */
+        Eigen::VectorXd b = g - u;
         QuadraticFunction mk = QuadraticFunction(H, b, func.lambda1);
         double norm_g = (w - func.prox1(w - g, 1)).lpNorm<2>();
         double tol_fgm;
@@ -298,15 +314,12 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         } else {
             tol_fgm = 1e-10;
         }
-        if (int(iter) < func.n_samples()) {
-            tol_fgm = 1;
-        }
         size_t maxiter_fgm = 10000;
         Eigen::VectorXd w_bar = fgm(mk, w, maxiter_fgm, tol_fgm);
         w += alpha * (w_bar - w);
 
         /* log current position */
-        if (logger.log(w)) break;
+        if (logger.log(w, minibatch_sizes[j])) break;
     }
 
     return w;
@@ -318,20 +331,23 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
 Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, bool exact)
 {
+    /* Auxliary variables */
+    const int n_samples = func.n_samples();
+
     /* some parameters */
     const size_t maxiter_fgm = 10000;
 
     /* assign starting point */
     Eigen::VectorXd w = w0;
 
-    /* log initial position */
+    /* log initial position (only for aesthetic purposes) */
     logger.log(w);
 
     /* initialisation */
-    size_t n_full_calls = 0;
+    size_t n_calls_add = 0;
     Eigen::VectorXd g = func.full_grad(w); // gradient
     Eigen::MatrixXd H = func.full_hess(w); // Hessian
-    ++n_full_calls;
+    n_calls_add += n_samples;
 
     /* main loop */
     for (size_t iter = 0; iter < maxiter; ++iter) {
@@ -349,10 +365,13 @@ Eigen::VectorXd newton(const LogRegOracle& func, Logger& logger, const Eigen::Ve
         /* call function at new point */
         g = func.full_grad(w);
         H = func.full_hess(w);
-        ++n_full_calls;
+        n_calls_add += n_samples;
 
         /* log current position */
-        if (logger.log(w, n_full_calls)) break;
+        if (logger.log(w, n_calls_add)) break;
+
+        /* Prepare for next iteration */
+        n_calls_add = 0;
     }
 
     return w;
@@ -466,19 +485,22 @@ Eigen::VectorXd cg(const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
 
 Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double c1)
 {
+    /* Auxiliary variables */
+    const int n_samples = func.n_samples();
+
     /* assign starting point */
     Eigen::VectorXd w = w0;
 
-    /* log initial position */
+    /* log initial position (only for aesthetic purposes) */
     logger.log(w);
 
     /* initialisation */
-    size_t n_full_calls = 0; // total number of function calls
+    size_t n_calls_add = 0;
 
     double f; // function value
     Eigen::VectorXd g; // gradient
     f = func.full_val_grad(w, g);
-    ++n_full_calls;
+    n_calls_add += n_samples;
 
     Eigen::VectorXd d = Eigen::VectorXd::Zero(w.size()); // direction
 
@@ -513,7 +535,7 @@ Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
             /* call function at new point */
             double f_new = func.full_val_grad(w_new, g);
-            ++n_full_calls;
+            n_calls_add += n_samples;
 
             /* check Armijo condition */
             if (f_new <= f + c1 * alpha * gtd || norm_g < 1e-6) { // always use unit step length when close to optimum
@@ -528,7 +550,10 @@ Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         }
 
         /* log current position */
-        if (logger.log(w, n_full_calls)) break;
+        if (logger.log(w, n_calls_add)) break;
+
+        /* Prepare for next iteration */
+        n_calls_add = 0;
     }
 
     return w;
@@ -540,19 +565,22 @@ Eigen::VectorXd HFN(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 
 Eigen::VectorXd BFGS(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, double c1)
 {
+    /* Auxiliary variables */
+    const int n_samples = func.n_samples();
+
     /* assign starting point */
     Eigen::VectorXd w = w0;
 
-    /* log initial position */
+    /* log initial position (only for aesthetic purposes) */
     logger.log(w);
 
     /* initialisation */
-    size_t n_full_calls = 0;
+    size_t n_calls_add = 0;
 
     double f; // function value
     Eigen::VectorXd g; // gradient
     f = func.full_val_grad(w, g);
-    ++n_full_calls;
+    n_calls_add += n_samples;
 
     Eigen::MatrixXd B = Eigen::MatrixXd::Identity(w.size(), w.size()); // BFGS approximation for the Hessian
 
@@ -576,7 +604,7 @@ Eigen::VectorXd BFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vect
 
             /* call function at new point */
             f_new = func.full_val_grad(w_new, g_new);
-            ++n_full_calls;
+            n_calls_add += n_samples;
 
             /* check Armijo condition */
             if (f_new <= f + c1 * alpha * gtd || norm_g < 1e-6) { // always use unit step length when close to optimum
@@ -604,7 +632,10 @@ Eigen::VectorXd BFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vect
         g = g_new;
 
         /* log current position */
-        if (logger.log(w, n_full_calls)) break;
+        if (logger.log(w, n_calls_add)) break;
+
+        /* Prepare for next iteration */
+        n_calls_add = 0;
     }
 
     return w;
@@ -655,19 +686,22 @@ Eigen::VectorXd lbfgs_prod(std::deque<std::pair<Eigen::VectorXd, Eigen::VectorXd
 
 Eigen::VectorXd LBFGS(const LogRegOracle& func, Logger& logger, const Eigen::VectorXd& w0, size_t maxiter, size_t m, double c1)
 {
+    /* Auxuliary variables */
+    const int n_samples = func.n_samples();
+
     /* assign starting point */
     Eigen::VectorXd w = w0;
 
-    /* log initial position */
+    /* log initial position (only for aesthetic purposes) */
     logger.log(w);
 
     /* initialisation */
-    size_t n_full_calls = 0;
+    size_t n_calls_add = 0;
 
     double f; // function value
     Eigen::VectorXd g; // gradient
     f = func.full_val_grad(w, g);
-    ++n_full_calls;
+    n_calls_add += n_samples;
 
     std::deque<std::pair<Eigen::VectorXd, Eigen::VectorXd>> ys_hist; // L-BFGS history
     Eigen::VectorXd d; // direction
@@ -703,7 +737,7 @@ Eigen::VectorXd LBFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vec
 
             /* call function at new point */
             f_new = func.full_val_grad(w_new, g_new);
-            ++n_full_calls;
+            n_calls_add += n_samples;
 
             /* check Armijo condition */
             if (f_new <= f + c1 * alpha * gtd || norm_g < 1e-6) { // always use unit step length when close to optimum
@@ -728,7 +762,10 @@ Eigen::VectorXd LBFGS(const LogRegOracle& func, Logger& logger, const Eigen::Vec
         g = g_new;
 
         /* log current position */
-        if (logger.log(w, n_full_calls)) break;
+        if (logger.log(w, n_calls_add)) break;
+
+        /* Prepare for next iteration */
+        n_calls_add = 0;
     }
 
     return w;

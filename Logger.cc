@@ -10,21 +10,18 @@ Logger::Logger(const LogRegOracle& func, double n_logs_per_epoch, double tol, do
     func(func),
     how_often(func.n_samples() / n_logs_per_epoch),
     n_calls(0),
+    n_calls_last(0),
     t_start(clock()),
     mainten_time(0.0),
     tol(tol),
     opt_allowed_time(opt_allowed_time)
 {}
 
-bool Logger::log(const Eigen::VectorXd& w, size_t n_full_calls)
+bool Logger::log(const Eigen::VectorXd& w, size_t n_calls_add)
 {
     bool terminate = false; // don't terminate unless needed
 
-    if (n_full_calls > 0) { /* this is a non-incremental optimiser, its each call equals one epoch */
-        n_calls = n_full_calls * func.n_samples();
-    }
-
-    if (n_calls % how_often == 0) { /* perform actual logging only every `how_often` calls */
+    if (n_calls >= n_calls_last + how_often || n_calls == 0) { /* perform actual logging only every `how_often` calls */
         /* remember the time when the maintenance starts */
         clock_t mainten_start = clock();
 
@@ -66,10 +63,13 @@ bool Logger::log(const Eigen::VectorXd& w, size_t n_full_calls)
 
         /* increase total maintenance time by the time spent on running this chunk of code */
         mainten_time += double(clock() - mainten_start) / CLOCKS_PER_SEC;
+
+        /* Remember this time as the last time when something was reported */
+        n_calls_last = n_calls;
     }
 
     /* increase total number of calls for this logger */
-    ++n_calls;
+    n_calls += n_calls_add;
 
     /* return the state */
     return terminate;

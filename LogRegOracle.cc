@@ -3,9 +3,32 @@
 #include "LogRegOracle.h"
 #include "special.h"
 
-LogRegOracle::LogRegOracle(const Eigen::MatrixXd& Z, double lambda, double lambda1)
+LogRegOracle::LogRegOracle(const Eigen::MatrixXd& Z, double lambda, double lambda1, int minibatch_size)
     : CompositeFunction(lambda1), Z(Z), lambda(lambda)
 {
+    /* Auxiliary variables */
+    const int n = Z.rows();
+    const int d = Z.cols();
+
+    /* Construct a random permutation */
+    std::vector<int> perm(n);
+    std::iota(perm.begin(), perm.end(), 0);
+    std::random_shuffle(perm.begin(), perm.end());
+
+    /* Split training samples into list of matrices of size ~`minibatch_size` */
+    n_minibatches = ceil(double(n) / minibatch_size);
+    minibatch_sizes.resize(n_minibatches);
+    int i = 0;
+    int size_rem = n % minibatch_size; // size of the "last" minibatch
+    for (int j = 0; j < n_minibatches; ++j) {
+        // Determine the size of this minibatch
+        minibatch_sizes[j] = (size_rem == 0 || j < n_minibatches - 1) ? minibatch_size : size_rem;
+        Eigen::MatrixXd Z_minibatch(minibatch_sizes[j], d);
+        for (int k = 0; k < minibatch_sizes[j]; ++k) {
+            Z_minibatch.row(k) = Z.row(perm[i++]);
+        }
+        Z_list.emplace_back(Z_minibatch);
+    }
 }
 
 int LogRegOracle::n_samples() const { return Z.rows(); }
@@ -64,15 +87,15 @@ LogRegHessVec LogRegOracle::hessvec() const
     return LogRegHessVec(Z, lambda);
 }
 
-double LogRegOracle::phi_prime(double mu) const
+Eigen::VectorXd LogRegOracle::phi_prime(const Eigen::VectorXd& mu) const
 {
-    return sigm(mu);
+    return mu.unaryExpr(std::ptr_fun(sigm));
 }
 
-double LogRegOracle::phi_double_prime(double mu) const
+Eigen::VectorXd LogRegOracle::phi_double_prime(const Eigen::VectorXd& mu) const
 {
-    double s = sigm(mu);
-    return s * (1 - s);
+    Eigen::VectorXd s = mu.unaryExpr(std::ptr_fun(sigm));
+    return s.array() * (1 - s.array());
 }
 
 /* ****************************************************************************************************************** */
