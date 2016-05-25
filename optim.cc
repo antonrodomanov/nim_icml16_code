@@ -311,7 +311,7 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         nim_update_model(func, j, w, mu_list, phi_prime_list, phi_double_prime_list, g, u, H, B, exact);
 
         /* Determine the accuracy for inner problem */
-        double norm_g = (w - func.prox1(w - g, 1)).lpNorm<Eigen::Infinity>();
+        double norm_g = (w - func.prox1(w - (g + lambda * w), 1)).lpNorm<Eigen::Infinity>();
         double tol_inner;
         if (!exact) {
             tol_inner = std::min(1.0, sqrt(norm_g)) * norm_g;
