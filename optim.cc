@@ -233,7 +233,8 @@ void nim_update_model(const LogRegOracle& func, int j, const Eigen::VectorXd& w,
         double coef = delta_phi_double_prime(0) / (n + delta_phi_double_prime(0) * zi.dot(bzi));
         B.selfadjointView<Eigen::Upper>().rankUpdate(bzi, -coef);
     } else { /* Otherwise update the primal matrix `H` directly */
-        H += (1.0 / n) * (Z_minibatch.transpose() * (Z_minibatch.array().colwise() * delta_phi_double_prime.array()).matrix());
+        auto S = delta_phi_double_prime.asDiagonal();
+        H += (1.0 / n) * (Z_minibatch.transpose() * S * Z_minibatch);
     }
 
     /* update model */
