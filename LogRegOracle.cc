@@ -10,11 +10,6 @@ LogRegOracle::LogRegOracle(const Eigen::MatrixXd& Z, double lambda, double lambd
     const int n = Z.rows();
     const int d = Z.cols();
 
-    /* Construct a random permutation */
-    std::vector<int> perm(n);
-    std::iota(perm.begin(), perm.end(), 0);
-    std::random_shuffle(perm.begin(), perm.end());
-
     /* Split training samples into list of matrices of size ~`minibatch_size` */
     n_minibatches = ceil(double(n) / minibatch_size);
     minibatch_sizes.resize(n_minibatches);
@@ -25,7 +20,7 @@ LogRegOracle::LogRegOracle(const Eigen::MatrixXd& Z, double lambda, double lambd
         minibatch_sizes[j] = (size_rem == 0 || j < n_minibatches - 1) ? minibatch_size : size_rem;
         Eigen::MatrixXd Z_minibatch(minibatch_sizes[j], d);
         for (int k = 0; k < minibatch_sizes[j]; ++k) {
-            Z_minibatch.row(k) = Z.row(perm[i++]);
+            Z_minibatch.row(k) = Z.row(i++);
         }
         Z_list.emplace_back(Z_minibatch);
     }
