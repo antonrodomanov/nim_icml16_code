@@ -266,7 +266,7 @@ int main(int argc, char* argv[])
     LogRegOracle func(Z, lambda, lambda1, minibatch_size); // prepare oracle
     Logger logger(func, n_logs_per_epoch, tol, opt_allowed_time); // prepare logger
 
-    fprintf(stderr, "lambda=%g, lambda1=%g, minibatch_size=%d, L=%g, max_epochs=%g\n", lambda, lambda1, minibatch_size, L, max_epochs);
+    fprintf(stderr, "lambda2=%g, lambda1=%g, minibatch_size=%d, L=%g, max_epochs=%g\n", lambda, lambda1, minibatch_size, L, max_epochs);
     /* run chosen method */
     if (method == "SAG") {
         /* print summary */
@@ -315,11 +315,10 @@ int main(int argc, char* argv[])
 
     /* construct the name of the output file */
     char out_filename[100];
-    if (method == "SAG" || method == "SGD") { // incremental methods
-        sprintf(out_filename, "output/%s.%s.alpha=%g.sampling=%s.init=%s.dat",
-                dataset.c_str(), method.c_str(), alpha, sampling_scheme.c_str(), init_scheme.c_str());
+    if (method == "SAG" || method == "SGD" || method == "NIM") { // incremental methods
+        sprintf(out_filename, "output/%s.%s.minibatch_size=%d.dat", dataset.c_str(), method.c_str(), minibatch_size);
     } else { // non-incremental methods
-        if (method == "newton" || method == "NIM") { // can be exact or inexact
+        if (method == "newton" ) { // can be exact or inexact
            sprintf(out_filename, "output/%s.%s.exact=%d.dat", dataset.c_str(), method.c_str(), exact);
         } else {
            sprintf(out_filename, "output/%s.%s.dat", dataset.c_str(), method.c_str());
