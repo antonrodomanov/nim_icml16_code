@@ -17,6 +17,7 @@ int main(int argc, char* argv[])
     std::string dataset = "";
     std::string sampling_scheme = "";
     std::string init_scheme = "";
+    std::string output_filename = "";
     double lambda = -1;
     double lambda1 = -1;
     int minibatch_size = 1;
@@ -95,6 +96,11 @@ int main(int argc, char* argv[])
             "Initialisation scheme (only for SAG or NIM): self-init (default) or full (initialise every component at w0)",
             false, init_scheme, "string"
         );
+        TCLAP::ValueArg<std::string> arg_output_filename(
+            "", "output_filename",
+            "Filename for the output file (if not specified, will be generated automatically)",
+            false, output_filename, "string"
+        );
         TCLAP::ValueArg<bool> arg_exact(
             "", "exact",
             "Solve subprolem exactly (accuracy 1e-10) or not (only for NIM and Newton): true or false",
@@ -103,6 +109,7 @@ int main(int argc, char* argv[])
 
         /* add options to parser */
         cmd.add(arg_exact);
+        cmd.add(arg_output_filename);
         cmd.add(arg_init_scheme);
         cmd.add(arg_sampling_scheme);
         cmd.add(arg_opt_allowed_time);
@@ -132,6 +139,7 @@ int main(int argc, char* argv[])
         opt_allowed_time = arg_opt_allowed_time.getValue();
         sampling_scheme = arg_sampling_scheme.getValue();
         init_scheme = arg_init_scheme.getValue();
+        output_filename = arg_output_filename.getValue();
         exact = arg_exact.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
@@ -315,13 +323,18 @@ int main(int argc, char* argv[])
 
     /* construct the name of the output file */
     char out_filename[100];
-    if (method == "SAG" || method == "SGD" || method == "NIM") { // incremental methods
-        sprintf(out_filename, "output/%s.%s.minibatch_size=%d.dat", dataset.c_str(), method.c_str(), minibatch_size);
-    } else { // non-incremental methods
-        if (method == "newton" ) { // can be exact or inexact
-           sprintf(out_filename, "output/%s.%s.exact=%d.dat", dataset.c_str(), method.c_str(), exact);
-        } else {
-           sprintf(out_filename, "output/%s.%s.dat", dataset.c_str(), method.c_str());
+    if (output_filename != "") {
+        sprintf(out_filename, "output/%s", output_filename.c_str());
+    } else {
+        std::string prefix = lambda ? "l2" : "l1";
+        if (method == "SAG" || method == "SGD" || method == "NIM") { // incremental methods
+            sprintf(out_filename, "output/%s.%s.%s.minibatch_size=%d.dat", prefix.c_str(), dataset.c_str(), method.c_str(), minibatch_size);
+        } else { // non-incremental methods
+            if (method == "newton" ) { // can be exact or inexact
+               sprintf(out_filename, "output/%s.%s.%s.exact=%d.dat", prefix.c_str(), dataset.c_str(), method.c_str(), exact);
+            } else {
+               sprintf(out_filename, "output/%s.%s.%s.dat", prefix.c_str(), dataset.c_str(), method.c_str());
+            }
         }
     }
 
