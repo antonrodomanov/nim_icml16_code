@@ -42,12 +42,14 @@ public:
     Eigen::VectorXd phi_prime(const Eigen::VectorXd& mu) const;
     Eigen::VectorXd phi_double_prime(const Eigen::VectorXd& mu) const;
 
+    int get_n_minibatches() const;
+    int get_jth_minibatch_size(int j) const;
+    const Eigen::Block<const Eigen::MatrixXd> get_jth_submatrix(int j) const;
+
     const Eigen::MatrixXd& Z;
     double lambda;
 
-    int n_minibatches; // number of minibatches that samples are divided in
-    std::vector<int> minibatch_sizes; // vector containing the size of each minibatch (only one minibatch out of all may be of different size)
-    std::vector<Eigen::MatrixXd> Z_list; // list of submatrices of `Z` corresponding to minibatches
+    int minibatch_size;
 };
 
 #endif

@@ -76,8 +76,7 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 {
     /* Auxiliary variables */
     const int n_samples = func.n_samples();
-    const int n_minibatches = func.n_minibatches;
-    const std::vector<int>& minibatch_sizes = func.minibatch_sizes;
+    const int n_minibatches = func.get_n_minibatches();
 
     /* assign starting point */
     Eigen::VectorXd w = w0;
@@ -94,7 +93,7 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         int j = sampler.sample();
 
         /* compute its gradient g_i = nabla f_i(w) */
-        const Eigen::MatrixXd& Z_minibatch = func.Z_list[j];
+        auto Z_minibatch = func.get_jth_submatrix(j);
         Eigen::VectorXd mu = Z_minibatch * w;
         Eigen::VectorXd sg = (double(n_minibatches) / n_samples) *
             (Z_minibatch.transpose() * func.phi_prime(mu));
@@ -105,7 +104,7 @@ Eigen::VectorXd SGD(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         w = func.prox1(w - step_length * sg, step_length);
 
         /* log current position */
-        if (logger.log(w, minibatch_sizes[j])) break;
+        if (logger.log(w, func.get_jth_minibatch_size(j))) break;
     }
 
     return w;
@@ -119,7 +118,8 @@ void sag_update_model(const LogRegOracle& func, int j, const Eigen::VectorXd& w,
 {
     /* assign useful variables */
     const int n = func.n_samples();
-    const Eigen::MatrixXd& Z_minibatch = func.Z_list[j];
+    //const Eigen::MatrixXd& Z_minibatch = func.Z_list[j];
+    const Eigen::MatrixXd& Z_minibatch = func.Z;
 
     /* compute phi_prime_new = phi'(z_i' * w) */
     Eigen::VectorXd mu = Z_minibatch * w;
@@ -137,8 +137,7 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
                     const std::string& sampling_scheme, const std::string& init_scheme)
 {
     /* assign useful variables */
-    const int n_minibatches = func.n_minibatches;
-    const std::vector<int>& minibatch_sizes = func.minibatch_sizes;
+    const int n_minibatches = func.get_n_minibatches();
     const int d = w0.size();
     const double lambda = func.lambda;
 
@@ -151,7 +150,7 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     /* initialisation */
     std::vector<Eigen::VectorXd> phi_prime_list(n_minibatches); // coefficients phi_prime(i) = phi'(z_i' * v_i)
     for (int j = 0; j < n_minibatches; ++j) {
-        phi_prime_list[j] = Eigen::VectorXd::Zero(minibatch_sizes[j]);
+        phi_prime_list[j] = Eigen::VectorXd::Zero(func.get_jth_minibatch_size(j));
     }
 
     Eigen::VectorXd g = Eigen::VectorXd::Zero(d); // average gradient g = 1/N sum_i nabla f_i(v_i)
@@ -165,7 +164,7 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
             sag_update_model(func, j, w0, phi_prime_list, g);
 
             /* don't cheat, call the logger because initialisation counts too */
-            if (logger.log(w0, minibatch_sizes[j])) break;
+            if (logger.log(w0, func.get_jth_minibatch_size(j))) break;
         }
     } else {
         fprintf(stderr, "Unknown initialisation scheme.\n");
@@ -187,7 +186,7 @@ Eigen::VectorXd SAG(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         w = func.prox1(w - alpha * (g + lambda * w), alpha);
 
         /* log current position */
-        if (logger.log(w, minibatch_sizes[j])) break;
+        if (logger.log(w, func.get_jth_minibatch_size(j))) break;
     }
 
     return w;
@@ -205,7 +204,7 @@ void nim_update_model(const LogRegOracle& func, int j, const Eigen::VectorXd& w,
 {
     /* assign useful variables */
     const int n = func.n_samples();
-    const Eigen::MatrixXd& Z_minibatch = func.Z_list[j];
+    auto Z_minibatch = func.get_jth_submatrix(j);
 
     /* compute new mu_i = z_i' * v_i where v_i = w */
     Eigen::VectorXd mu_new = Z_minibatch * w;
@@ -227,7 +226,7 @@ void nim_update_model(const LogRegOracle& func, int j, const Eigen::VectorXd& w,
     Eigen::VectorXd delta_phi_double_prime = phi_double_prime_new - phi_double_prime_list[j];
 
     /* update B using Sherman-Morrison-Woodbury formula (rank-1 update) */
-    if (exact && func.lambda1 == 0 && func.n_minibatches == n) { /* use `B` only when `exact` and `lambda1=0` and `minibatch_size=1` */
+    if (exact && func.lambda1 == 0 && func.get_n_minibatches() == n) { /* use `B` only when `exact` and `lambda1=0` and `minibatch_size=1` */
         Eigen::VectorXd zi = Z_minibatch.row(0).transpose();
         Eigen::VectorXd bzi = B.selfadjointView<Eigen::Upper>() * zi;
         double coef = delta_phi_double_prime(0) / (n + delta_phi_double_prime(0) * zi.dot(bzi));
@@ -248,8 +247,7 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
 {
     /* assign useful variables */
     const int n_samples = func.n_samples();
-    const int n_minibatches = func.n_minibatches;
-    const std::vector<int> minibatch_sizes = func.minibatch_sizes;
+    const int n_minibatches = func.get_n_minibatches();
     const int d = w0.size();
     const double lambda = func.lambda;
     const size_t maxiter_fgm = 10000;
@@ -263,9 +261,9 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
     std::vector<Eigen::VectorXd> phi_prime_list(n_minibatches); // coefficients phi_prime(i) = phi'(mu_i)
     std::vector<Eigen::VectorXd> phi_double_prime_list(n_minibatches); // coefficients phi_doube_prime(i) = phi''(mu_i)
     for (int j = 0; j < n_minibatches; ++j) {
-        mu_list[j] = Eigen::VectorXd::Zero(minibatch_sizes[j]);
-        phi_prime_list[j] = Eigen::VectorXd::Zero(minibatch_sizes[j]);
-        phi_double_prime_list[j] = Eigen::VectorXd::Zero(minibatch_sizes[j]);
+        mu_list[j] = Eigen::VectorXd::Zero(func.get_jth_minibatch_size(j));
+        phi_prime_list[j] = Eigen::VectorXd::Zero(func.get_jth_minibatch_size(j));
+        phi_double_prime_list[j] = Eigen::VectorXd::Zero(func.get_jth_minibatch_size(j));
     }
 
     Eigen::VectorXd g = Eigen::VectorXd::Zero(d); // average gradient g = 1/N sum_i nabla f_i(v_i)
@@ -290,7 +288,7 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
             nim_update_model(func, j, w0, mu_list, phi_prime_list, phi_double_prime_list, g, u, H, B, exact);
 
             /* don't cheat, call the logger because initialisation counts too */
-            if (logger.log(w0, minibatch_sizes[j])) break;
+            if (logger.log(w0, func.get_jth_minibatch_size(j))) break;
         }
     } else {
         fprintf(stderr, "Unknown initialisation scheme.\n");
@@ -349,7 +347,7 @@ Eigen::VectorXd NIM(const LogRegOracle& func, Logger& logger, const Eigen::Vecto
         w += alpha * (w_bar - w);
 
         /* log current position */
-        if (logger.log(w, minibatch_sizes[j])) break;
+        if (logger.log(w, func.get_jth_minibatch_size(j))) break;
     }
 
     return w;

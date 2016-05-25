@@ -4,26 +4,28 @@
 #include "special.h"
 
 LogRegOracle::LogRegOracle(const Eigen::MatrixXd& Z, double lambda, double lambda1, int minibatch_size)
-    : CompositeFunction(lambda1), Z(Z), lambda(lambda)
+    : CompositeFunction(lambda1), Z(Z), lambda(lambda), minibatch_size(minibatch_size)
 {
-    /* Auxiliary variables */
-    const int n = Z.rows();
-    const int d = Z.cols();
+}
 
-    /* Split training samples into list of matrices of size ~`minibatch_size` */
-    n_minibatches = ceil(double(n) / minibatch_size);
-    minibatch_sizes.resize(n_minibatches);
-    int i = 0;
-    int size_rem = n % minibatch_size; // size of the "last" minibatch
-    for (int j = 0; j < n_minibatches; ++j) {
-        // Determine the size of this minibatch
-        minibatch_sizes[j] = (size_rem == 0 || j < n_minibatches - 1) ? minibatch_size : size_rem;
-        Eigen::MatrixXd Z_minibatch(minibatch_sizes[j], d);
-        for (int k = 0; k < minibatch_sizes[j]; ++k) {
-            Z_minibatch.row(k) = Z.row(i++);
-        }
-        Z_list.emplace_back(Z_minibatch);
+int LogRegOracle::get_n_minibatches() const
+{
+    return ceil(double(Z.rows()) / minibatch_size);
+}
+
+int LogRegOracle::get_jth_minibatch_size(int j) const
+{
+    int rem = Z.rows() % minibatch_size;
+    if (rem == 0 || j < get_n_minibatches() - 1) {
+        return minibatch_size;
     }
+    return rem;
+}
+
+const Eigen::Block<const Eigen::MatrixXd> LogRegOracle::get_jth_submatrix(int j) const
+{
+    int size_j = get_jth_minibatch_size(j);
+    return Z.block(j * minibatch_size, 0, size_j, Z.cols());
 }
 
 int LogRegOracle::n_samples() const { return Z.rows(); }
