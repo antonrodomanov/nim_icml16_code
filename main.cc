@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
     double max_epochs = 1.0;
     double n_logs_per_epoch = -1;
     double alpha = -1;
-    double tol = 1e-6;
+    double tol = 1e-10;
     double opt_allowed_time = -1;
     bool exact = false;
 
