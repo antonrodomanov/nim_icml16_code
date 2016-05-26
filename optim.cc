@@ -118,8 +118,7 @@ void sag_update_model(const LogRegOracle& func, int j, const Eigen::VectorXd& w,
 {
     /* assign useful variables */
     const int n = func.n_samples();
-    //const Eigen::MatrixXd& Z_minibatch = func.Z_list[j];
-    const Eigen::MatrixXd& Z_minibatch = func.Z;
+    auto Z_minibatch = func.get_jth_submatrix(j);
 
     /* compute phi_prime_new = phi'(z_i' * w) */
     Eigen::VectorXd mu = Z_minibatch * w;
